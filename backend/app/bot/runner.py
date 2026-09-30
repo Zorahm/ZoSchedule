@@ -94,6 +94,12 @@ async def run_forever(config: AppConfig, schedule: ScheduleService | None = None
     """The whole bot: the schedule loop and the command listener side by side."""
     async with open_service(config, schedule) as service:
         logger.info("Бот запущен, проверка раз в %d с", TICK_SECONDS)
+        if not config.bot.trusted_users:
+            logger.warning(
+                "trusted_users пуст: команду /go не примет никто, а из любой группы, "
+                "куда бота добавят, он выйдет. Задайте id в config.toml или "
+                "ZOSCHEDULE_BOT_TRUSTED_USERS"
+            )
         if config.bot.proxy_label:
             logger.info("Telegram через прокси %s", config.bot.proxy_label)
         dispatcher = build_dispatcher(service)
@@ -101,7 +107,7 @@ async def run_forever(config: AppConfig, schedule: ScheduleService | None = None
             run_ticks(service),
             dispatcher.start_polling(  # pyright: ignore[reportUnknownMemberType]  # aiogram's UNSET default
                 service.bot,
-                allowed_updates=["message"],
+                allowed_updates=["message", "my_chat_member"],
                 # One update at a time, as before: two /go at once would race on the chat.
                 handle_as_tasks=False,
                 # The bot may live inside another app that owns the signals.

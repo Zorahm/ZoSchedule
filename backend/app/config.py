@@ -32,6 +32,12 @@ PROXY_HINT = (
 )
 
 
+TRUSTED_HINT = (
+    "trusted_users: ожидается список положительных Telegram-id людей, "
+    "в .env — через запятую: ZOSCHEDULE_BOT_TRUSTED_USERS=123456789,987654321"
+)
+
+
 class BotConfig(BaseModel):
     """Telegram bot. Token and chat id come from the environment, not from the repo."""
 
@@ -48,10 +54,32 @@ class BotConfig(BaseModel):
     chat_id: str = ""
     thread_id: int | None = None
     """Fallback target for a bot never told /go. Normally the chat comes from /go."""
+    trusted_users: list[int] = []  # pydantic copies the default for every instance
+    """Telegram ids of the people who may run the bot (`/go`) and add it to a group.
+
+    Everyone else is ignored, and a group they add the bot to is left at once."""
     proxy: SecretStr | None = None
     """Proxy for Telegram only (the college site is fetched directly). Optional.
 
     A secret: the URL may hold a login and password."""
+
+    @field_validator("trusted_users", mode="before")
+    @classmethod
+    def _trusted_users_from_a_list_or_a_comma_string(cls, value: object) -> object:
+        """`.env` gives "123,456"; config.toml gives a list."""
+        if isinstance(value, str):
+            try:
+                return [int(part) for part in value.replace(";", ",").split(",") if part.strip()]
+            except ValueError:
+                raise ValueError(TRUSTED_HINT) from None
+        return value
+
+    @field_validator("trusted_users")
+    @classmethod
+    def _trusted_users_are_people(cls, value: list[int]) -> list[int]:
+        if any(user_id <= 0 for user_id in value):
+            raise ValueError(TRUSTED_HINT)  # a negative id is a group, not a person
+        return sorted(set(value))
 
     @field_validator("proxy")
     @classmethod
@@ -142,6 +170,7 @@ def load_config(path: Path | None = None) -> AppConfig:
         ("ZOSCHEDULE_BOT_CHAT_ID", "chat_id"),
         ("ZOSCHEDULE_BOT_THREAD_ID", "thread_id"),
         ("ZOSCHEDULE_BOT_PROXY", "proxy"),
+        ("ZOSCHEDULE_BOT_TRUSTED_USERS", "trusted_users"),
     ):
         value = os.environ.get(env_name)
         if value:

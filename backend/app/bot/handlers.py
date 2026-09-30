@@ -2,6 +2,10 @@
 
 Group privacy stays on: Telegram delivers commands to such a bot, and the bot
 has no use for ordinary messages.
+
+Only the people in `bot.trusted_users` command the bot. Everyone else is ignored
+without a word (an answer would only tell a stranger that the bot is alive), and a
+group that a stranger adds the bot to is left at once.
 """
 
 from __future__ import annotations
@@ -12,7 +16,8 @@ import logging
 from aiogram import Bot, F, Router
 from aiogram.exceptions import TelegramRetryAfter
 from aiogram.filters import Command
-from aiogram.types import ChatMemberAdministrator, ChatMemberOwner, Message
+from aiogram.enums import ChatMemberStatus
+from aiogram.types import ChatMemberUpdated, Message
 
 from app.bot import errors
 from app.bot.service import BotService
@@ -20,7 +25,6 @@ from app.bot.service import BotService
 logger = logging.getLogger(__name__)
 
 NOT_A_GROUP = "Добавьте меня в группу и напишите /go там."
-ADMINS_ONLY = "Запускать меня может только администратор группы."
 
 _DELETE_TRIES = 3
 _DELETE_PAUSE = 2.0
@@ -28,22 +32,27 @@ _DELETE_PAUSE = 2.0
 _IN_GROUP = F.chat.type.in_({"group", "supergroup"})
 
 
-async def _is_admin(bot: Bot, message: Message) -> bool:
-    if message.sender_chat is not None and message.sender_chat.id == message.chat.id:
-        return True  # an admin writing anonymously "on behalf of the group"
-    if message.from_user is None:
-        return False
-    member = await bot.get_chat_member(chat_id=message.chat.id, user_id=message.from_user.id)
-    return isinstance(member, ChatMemberOwner | ChatMemberAdministrator)
+def _is_trusted(message: Message, service: BotService) -> bool:
+    user = message.from_user
+    if user is not None and user.id in service.trusted_users:
+        return True
+    # The log is where the owner finds the id to put into trusted_users. An anonymous
+    # group admin arrives as a service account and is never trusted.
+    logger.warning(
+        "Игнорирую /go от пользователя %s (%s): его нет в trusted_users",
+        user.id if user else "?",
+        f"@{user.username}" if user and user.username else "без ника",
+    )
+    return False
 
 
-async def go_outside_a_group(message: Message) -> None:
-    await message.answer(NOT_A_GROUP, disable_notification=True)
+async def go_outside_a_group(message: Message, service: BotService) -> None:
+    if _is_trusted(message, service):
+        await message.answer(NOT_A_GROUP, disable_notification=True)
 
 
-async def go(message: Message, bot: Bot, service: BotService) -> None:
-    if not await _is_admin(bot, message):
-        await message.answer(ADMINS_ONLY, disable_notification=True)
+async def go(message: Message, service: BotService) -> None:
+    if not _is_trusted(message, service):
         return
 
     # aiogram's `answer` already targets the topic; the service needs it to post there.
@@ -90,10 +99,36 @@ async def tidy_pin_notice(message: Message, bot: Bot) -> None:
     await _delete_notice(message)
 
 
+async def leave_a_group_a_stranger_added_me_to(
+    event: ChatMemberUpdated, bot: Bot, service: BotService
+) -> None:
+    """The bot is added to a group: stay if a trusted person did it, otherwise leave.
+
+    Only a fresh join counts; a promotion to administrator or a change of rights in
+    a group the bot already belongs to is not "being added".
+    """
+    if event.chat.type not in ("group", "supergroup"):
+        return
+    was_out = event.old_chat_member.status in (ChatMemberStatus.LEFT, ChatMemberStatus.KICKED)
+    is_in = event.new_chat_member.status in (ChatMemberStatus.MEMBER, ChatMemberStatus.ADMINISTRATOR)
+    if not (was_out and is_in) or event.from_user.id in service.trusted_users:
+        return
+    logger.warning(
+        "Пользователь %s (не из trusted_users) добавил бота в группу %s: выхожу",
+        event.from_user.id,
+        event.chat.id,
+    )
+    try:
+        await bot.leave_chat(chat_id=event.chat.id)
+    except errors.TELEGRAM_ERRORS as error:
+        logger.warning("Не удалось выйти из группы %s: %s", event.chat.id, error)
+
+
 def build_router() -> Router:
     """A fresh router each time: aiogram lets a router join only one dispatcher."""
     router = Router(name="commands")
     router.message.register(go_outside_a_group, Command("go", ignore_case=True), ~_IN_GROUP)
     router.message.register(go, Command("go", ignore_case=True), _IN_GROUP)
     router.message.register(tidy_pin_notice, F.pinned_message)
+    router.my_chat_member.register(leave_a_group_a_stranger_added_me_to)
     return router

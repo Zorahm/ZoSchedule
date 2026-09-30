@@ -69,6 +69,10 @@ class BotService:
         return self._bot
 
     @property
+    def trusted_users(self) -> frozenset[int]:
+        return frozenset(self._config.bot.trusted_users)
+
+    @property
     def db_path(self) -> Path:
         return self._config.db_path
 

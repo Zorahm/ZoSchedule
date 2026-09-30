@@ -16,7 +16,7 @@ from aiogram.exceptions import TelegramAPIError
 from aiogram.methods import (
     DeleteMessage,
     EditMessageMedia,
-    GetChatMember,
+    LeaveChat,
     GetMe,
     GetUpdates,
     PinChatMessage,
@@ -26,12 +26,9 @@ from aiogram.methods import (
     TelegramMethod,
     UnpinChatMessage,
 )
-from aiogram.enums import ChatMemberStatus
 from aiogram.methods.base import TelegramType
 from aiogram.types import (
     Chat,
-    ChatMemberAdministrator,
-    ChatMemberMember,
     InputFile,
     Message,
     Update,
@@ -88,7 +85,6 @@ class FakeTelegram:
         self.threads: list[int | None] = []
         self.silent: list[bool | None] = []
         """The `disable_notification` flag of every message and photo sent, in order."""
-        self.member_status = "administrator"
         self.updates: list[list[Update]] = []
         """Batches `getUpdates` hands out, one per call; then it finds nothing."""
         self._failures: dict[type[TelegramMethod[Any]], tuple[TelegramAPIError, int | None]] = {}
@@ -159,11 +155,9 @@ class FakeTelegram:
             assert method.message_id is not None
             self.calls.append(("unpin", method.message_id))
             return True
-        if isinstance(method, GetChatMember):
-            user = User(id=method.user_id, is_bot=False, first_name="Member")
-            if self.member_status == "administrator":
-                return ChatMemberAdministrator.model_construct(status="administrator", user=user)
-            return ChatMemberMember(status=ChatMemberStatus.MEMBER, user=user)
+        if isinstance(method, LeaveChat):
+            self.calls.append(("leave", method.chat_id))
+            return True
         if isinstance(method, GetUpdates):
             return self.updates.pop(0) if self.updates else []
         if isinstance(method, GetMe):

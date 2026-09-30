@@ -10,7 +10,8 @@ rem   start-bot.bat          подготовить (если нужно) и з�
 rem   start-bot.bat setup    только подготовить, не запускать (и переустановить зависимости)
 rem   start-bot.bat token    задать токен заново
 rem
-rem Чат бот узнаёт из команды /go, которую администратор пишет в группе.
+rem Чат бот узнаёт из команды /go, которую пишет в группе доверенный пользователь
+rem (ZOSCHEDULE_BOT_TRUSTED_USERS в .env: Telegram-id через запятую).
 
 setlocal EnableExtensions
 chcp 65001 >nul
@@ -69,6 +70,7 @@ if /i "%MODE%"=="setup" (
 rem ---------- 4. Запуск с автоперезапуском ----------------------------------
 echo.
 echo [ok] Запускаю бота. Остановить: Ctrl+C.
+echo      Впишите свой Telegram-id в .env: ZOSCHEDULE_BOT_TRUSTED_USERS=123456789
 echo      Добавьте бота в группу администратором и напишите там /go.
 echo.
 pushd "%ROOT%backend"
