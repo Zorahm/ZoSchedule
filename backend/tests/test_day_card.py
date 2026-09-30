@@ -9,6 +9,8 @@ from pydantic import SecretStr
 
 from app.bot import demo
 from app.bot.pictures import PictureBuilder
+from app.bot.renderer import find_browser, prepare_page
+from app.bot.templates import TITLE_MAX_LINES, WIDTH
 from app.bot.view import kind_tone
 from app.config import AppConfig, BotConfig
 from app.snapshots.service import ScheduleService
@@ -117,3 +119,57 @@ async def test_the_legend_appears_only_with_a_pair_shared_with_another_group(
     assert "пара вместе с группой ОККИПд-306" in with_stream
     assert '<div class="legend">' not in without
     assert "пара вместе с группой" not in without and "tag stream" not in without
+
+
+# -- long titles ----------------------------------------------------------------------------
+
+
+async def test_a_title_carries_its_short_form_only_when_it_has_one(
+    bot_config: AppConfig, at: Clock
+) -> None:
+    at(TUESDAY)
+    body = await _body(bot_config, TUESDAY)
+
+    # The full title is what shows; the short one waits in the attribute for a card that is too small.
+    assert (
+        '<div class="title" data-short="Иностранный язык">'
+        "Иностранный язык в профессиональной деятельности</div>"
+    ) in body
+    assert '<div class="title">Математический анализ</div>' in body  # nothing to shorten
+
+
+@pytest.mark.skipif(find_browser() is None, reason="нет установленного Chrome/Edge")
+async def test_in_a_real_browser_only_a_title_that_does_not_fit_is_shortened(
+    bot_config: AppConfig, at: Clock
+) -> None:
+    from playwright.async_api import async_playwright
+
+    at(TUESDAY)
+    service = ScheduleService(bot_config)
+    service.prepare()
+    service.store_lessons(demo.build_schedule(SUNDAY))
+    picture = await PictureBuilder(bot_config, FakeRenderer()).today(TUESDAY)
+    assert picture is not None
+    html = picture.png.decode("utf-8")  # the fake renderer hands the page back
+
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(executable_path=str(find_browser()))
+        try:
+            page = await browser.new_page(viewport={"width": WIDTH, "height": 800})
+            await prepare_page(page, html)
+            titles: list[tuple[str, str, float, float]] = await page.evaluate(
+                """Array.from(document.querySelectorAll('.card .title')).map(
+                    e => [e.textContent, e.dataset.short || '',
+                          e.getBoundingClientRect().height,
+                          parseFloat(getComputedStyle(e).lineHeight)])"""
+            )
+        finally:
+            await browser.close()
+
+    shown = [text for text, *_ in titles]
+    assert "Иностранный язык" in shown  # three lines in full: shortened
+    assert "Иностранный язык в профессиональной деятельности" not in shown
+    assert "Математический анализ" in shown  # fits: untouched
+    for text, short, height, line in titles:
+        if short and text != short:
+            assert height <= line * TITLE_MAX_LINES + 1  # kept in full, so it really fits

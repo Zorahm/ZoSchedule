@@ -20,6 +20,37 @@ from app.models.domain import RETAKE_KIND, weekday_ru
 FRAME_SELECTOR = ".frame"
 WIDTH = 1080
 
+TITLE_MAX_LINES = 2
+"""A card title longer than this many lines on the day picture is swapped for its short form."""
+WEEK_NAME_MIN_PX = 20
+"""A week row's name that does not fit shrinks down to this size before it is allowed to wrap."""
+
+# Runs in the browser, once the fonts are in (see the renderer): only real layout can say
+# whether a text fits. Day card titles that have a shorter form carry it in `data-short`.
+# A week row's name is never cut with "…": it shrinks a little, and only as a last
+# resort wraps onto a second line.
+_FIT_SCRIPT = """
+window.fitTitles = function () {
+  document.querySelectorAll('.title[data-short]').forEach(function (el) {
+    var line = parseFloat(getComputedStyle(el).lineHeight);
+    if (el.getBoundingClientRect().height > line * __LINES__ + 1) {
+      el.textContent = el.dataset.short;
+    }
+  });
+  document.querySelectorAll('.ln .n').forEach(function (el) {
+    var size = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > el.clientWidth + 1 && size > __MIN__) {
+      size -= 1;
+      el.style.fontSize = size + 'px';
+    }
+    if (el.scrollWidth > el.clientWidth + 1) {
+      el.style.whiteSpace = 'normal';
+      el.style.textOverflow = 'clip';
+    }
+  });
+};
+""".replace("__LINES__", str(TITLE_MAX_LINES)).replace("__MIN__", str(WEEK_NAME_MIN_PX))
+
 _CSS = """
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#f4efe6;font-family:Onest,system-ui,sans-serif}
@@ -86,15 +117,15 @@ h1{font-family:Unbounded,'Arial Black',sans-serif;font-size:96px;line-height:100
 .logo span{color:#ff4d2e}
 .upd{font-size:22px;line-height:28px;color:#5c5347}
 .days{display:flex;flex-direction:column;gap:12px;flex-grow:1}
-.row{display:grid;grid-template-columns:224px minmax(0,1fr);background:#fbf8f2;
+.row{display:grid;grid-template-columns:164px minmax(0,1fr);background:#fbf8f2;
   border:1px solid #d9cfbf;border-radius:10px;padding:20px 24px;align-items:center}
-.who{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding-right:20px;
+.who{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding-right:12px;
   border-right:1px solid #d9cfbf;align-self:stretch;justify-content:center}
 .dow{font-family:Onest,system-ui,sans-serif;font-size:76px;line-height:72px;font-weight:800;
   letter-spacing:-.02em;text-transform:uppercase}
 .dat{font-size:22px;line-height:28px;color:#5c5347}
-.ls{display:flex;flex-direction:column;gap:10px;padding-left:24px;min-width:0}
-.ln{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:16px;align-items:baseline}
+.ls{display:flex;flex-direction:column;gap:10px;padding-left:16px;min-width:0}
+.ln{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:12px;align-items:baseline}
 .ln .t{font-family:'JetBrains Mono',monospace;font-size:24px;line-height:30px;font-weight:600}
 .ln .n{font-size:26px;line-height:30px;font-weight:500;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis}
@@ -104,8 +135,8 @@ h1{font-family:Unbounded,'Arial Black',sans-serif;font-size:96px;line-height:100
 .tag.retake{background:#ff4d2e;border-color:#ff4d2e}
 .card.retake{flex-grow:0;background:#fff1ec;border-color:#ff4d2e}
 .card.retake .title{font-size:24px;line-height:32px}
-.ln.retake{grid-template-columns:92px auto minmax(0,1fr) auto;gap:16px;align-items:center;
-  background:#fde9e3;border-radius:10px;padding:8px 16px;margin:0 -16px}
+.ln.retake{grid-template-columns:84px auto minmax(0,1fr) auto;gap:12px;align-items:center;
+  background:#fde9e3;border-radius:10px;padding:8px 14px;margin:0 -14px}
 .ln.retake .t{color:#ff4d2e}
 .ln.retake .tag{font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.06em;
   font-size:16px;line-height:18px;padding:4px 8px}
@@ -120,7 +151,8 @@ def _page(body: str, *, height: int, gap: int) -> str:
     return (
         '<!doctype html><html lang="ru"><head><meta charset="utf-8">'
         f"<style>{font_css()}{_CSS}</style></head>"
-        f'<body><div class="frame" style="--h:{height}px;--gap:{gap}px">{body}</div></body></html>'
+        f'<body><div class="frame" style="--h:{height}px;--gap:{gap}px">{body}</div>'
+        f"<script>{_FIT_SCRIPT}</script></body></html>"
     )
 
 
@@ -136,6 +168,13 @@ def _footer(header: Header) -> str:
         '<div class="foot"><div class="logo">Z<span>\\</span>M</div>'
         f'<div class="upd">Обновлено {texts.date_long(header.updated)}</div></div>'
     )
+
+
+def _title(title: str) -> str:
+    """The card title; its short form rides along only when there is one."""
+    short = texts.short_title(title)
+    attr = f' data-short="{_esc(short)}"' if short and short != title else ""
+    return f'<div class="title"{attr}>{_esc(title)}</div>'
 
 
 def _meta(teacher: str | None) -> str:
@@ -169,7 +208,7 @@ def _card(lesson: LessonView) -> str:
         f'<div class="pn">{lesson.number} пара</div></div>'
         '<div class="body">'
         f'<div class="tags"><span class="badge {lesson.tone}">{_esc(lesson.kind)}</span>{stream}</div>'
-        f'<div class="title">{_esc(lesson.title)}</div>{_meta(lesson.teacher)}</div>'
+        f"{_title(lesson.title)}{_meta(lesson.teacher)}</div>"
         f"{_place(lesson.room_raw, lesson.building)}</div>"
     )
 
@@ -197,7 +236,7 @@ def _retake_card(retake: RetakeView) -> str:
         f'<div class="time"><div class="s">{retake.start}</div><div class="e">{retake.end}</div></div>'
         '<div class="body">'
         f'<div class="tags"><span class="badge red">{_esc(texts.kind_label(RETAKE_KIND))}</span></div>'
-        f'<div class="title">{_esc(retake.title)}</div>{_meta(retake.teacher)}</div>'
+        f"{_title(retake.title)}{_meta(retake.teacher)}</div>"
         f"{_place(retake.room.strip() if retake.room else None, retake.building)}</div>"
     )
 

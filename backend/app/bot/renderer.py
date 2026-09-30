@@ -11,9 +11,12 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from app.bot.templates import FRAME_SELECTOR, WIDTH
+
+if TYPE_CHECKING:
+    from playwright.async_api import Page
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +27,13 @@ class Renderer(Protocol):
 
 class RenderError(RuntimeError):
     pass
+
+
+async def prepare_page(page: Page, html: str) -> None:
+    """Loads the page and lets it settle: fonts in, then the titles fitted to their cards."""
+    await page.set_content(html, wait_until="load")
+    await page.evaluate("document.fonts.ready")
+    await page.evaluate("window.fitTitles && window.fitTitles()")
 
 
 def _candidate_paths() -> list[Path]:
@@ -76,8 +86,7 @@ class PlaywrightRenderer:
                 ) from error
             try:
                 page = await browser.new_page(viewport={"width": WIDTH, "height": 800})
-                await page.set_content(html, wait_until="load")
-                await page.evaluate("document.fonts.ready")
+                await prepare_page(page, html)
                 frame = page.locator(FRAME_SELECTOR)
                 return await frame.screenshot(type="png")
             finally:
