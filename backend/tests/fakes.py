@@ -86,6 +86,8 @@ class FakeTelegram:
         self.texts: list[str] = []
         self.captions: list[str] = []
         self.threads: list[int | None] = []
+        self.silent: list[bool | None] = []
+        """The `disable_notification` flag of every message and photo sent, in order."""
         self.member_status = "administrator"
         self.updates: list[list[Update]] = []
         """Batches `getUpdates` hands out, one per call; then it finds nothing."""
@@ -133,12 +135,14 @@ class FakeTelegram:
             self.calls.append(("message", sent.message_id))
             self.texts.append(method.text)
             self.threads.append(method.message_thread_id)
+            self.silent.append(method.disable_notification)
             return sent
         if isinstance(method, SendPhoto):
             sent = self._new_message(method.chat_id)
             self.calls.append(("photo", sent.message_id))
             self.captions.append(method.caption or "")
             self.threads.append(method.message_thread_id)
+            self.silent.append(method.disable_notification)
             assert isinstance(method.photo, InputFile)
             return sent
         if isinstance(method, EditMessageMedia):

@@ -97,6 +97,7 @@ class BotService:
             photo=BufferedInputFile(picture.png, "schedule.png"),
             caption=picture.caption,
             message_thread_id=self._thread,
+            disable_notification=self._config.bot.silent,
         )
         return sent.message_id
 
@@ -304,7 +305,10 @@ class BotService:
     async def _send_changes(self, events: list[ChangeEvent], today: dt.date) -> None:
         for text in texts.format_changes(events):
             sent = await self._bot.send_message(
-                chat_id=self._chat, text=text, message_thread_id=self._thread
+                chat_id=self._chat,
+                text=text,
+                message_thread_id=self._thread,
+                disable_notification=self._config.bot.silent,
             )
             with connect(self._config.db_path) as conn:
                 bot_store.record(

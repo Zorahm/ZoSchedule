@@ -39,6 +39,8 @@ class BotConfig(BaseModel):
     today_at: dt.time = dt.time(7, 0)
     week_at: dt.time = dt.time(7, 0)
     pin_week: bool = True
+    silent: bool = False
+    """Send every post without a sound (Telegram's `disable_notification`)."""
     refresh: bool = True
     """Poll the site from the bot itself, every `poll.interval_minutes`."""
     browser_path: Path | None = None
