@@ -523,6 +523,81 @@ async def test_changing_the_look_redraws_pictures_already_posted(
     assert telegram.kinds() == ["edit"]
 
 
+async def test_after_an_update_a_restarted_bot_edits_what_is_posted_and_posts_nothing_again(
+    bot_config: AppConfig, telegram: FakeTelegram, at: Clock
+) -> None:
+    """Updating the code on a bot that is already running in a chat."""
+    at(TUESDAY, "07:00")
+    save_demo(bot_config, TUESDAY)
+    before = BotService(bot_config, telegram.bot, FakeRenderer())
+    await before.post_week(force=True)
+    await before.post_today()
+    with connect(bot_config.db_path) as conn:
+        # What the old version left behind: pictures drawn by other code, other fingerprints.
+        conn.execute("UPDATE bot_messages SET fingerprint = 'drawn-by-the-old-version'")
+        ledger = [(m.kind, m.message_id) for k in ("week", "today") for m in bot_store.all_of_kind(conn, chat_id=CHAT, kind=k)]
+    telegram.calls.clear()
+
+    restarted = BotService(bot_config, telegram.bot, FakeRenderer())  # the process after the update
+    at(TUESDAY, "07:01")
+    await restarted.tick()
+
+    assert telegram.kinds() == ["edit", "edit"]  # the week and today, in place: no new posts, no pin
+    await restarted.tick()
+    assert telegram.kinds() == ["edit", "edit"]  # and then quiet
+    with connect(bot_config.db_path) as conn:
+        after = [(m.kind, m.message_id) for k in ("week", "today") for m in bot_store.all_of_kind(conn, chat_id=CHAT, kind=k)]
+    assert after == ledger  # the same messages, nothing re-posted
+
+
+async def test_a_restart_at_the_posting_time_does_not_post_twice(
+    bot_config: AppConfig, telegram: FakeTelegram, at: Clock
+) -> None:
+    at(SUNDAY, "07:00")
+    save_demo(bot_config, SUNDAY)
+    await BotService(bot_config, telegram.bot, FakeRenderer()).tick()
+    assert telegram.kinds() == ["photo", "pin"]  # the week, posted on time
+
+    at(SUNDAY, "07:02")
+    await BotService(bot_config, telegram.bot, FakeRenderer()).tick()  # restarted two minutes later
+
+    assert telegram.kinds() == ["photo", "pin"]
+
+
+async def _post_everything(config: AppConfig, telegram: FakeTelegram, at: Clock) -> None:
+    """A week, a day and a change text: every kind of message the bot sends by itself."""
+    at(SUNDAY)
+    save_demo(config, SUNDAY)
+    service = BotService(config, telegram.bot, FakeRenderer())
+    await service.announce_changes()  # baseline
+    await service.post_week()
+    at(TUESDAY)
+    await service.post_today()
+    _change(config, TUESDAY)
+    assert await service.announce_changes() == 4
+
+
+async def test_by_default_the_bot_posts_with_sound(
+    bot_config: AppConfig, telegram: FakeTelegram, at: Clock
+) -> None:
+    await _post_everything(bot_config, telegram, at)
+
+    assert len(telegram.silent) == 3  # week, day, changes
+    assert not any(telegram.silent)  # None: the flag is not even sent
+
+
+async def test_in_silent_mode_every_post_goes_without_sound(
+    bot_config: AppConfig, telegram: FakeTelegram, at: Clock
+) -> None:
+    quiet = bot_config.model_copy(
+        update={"bot": bot_config.bot.model_copy(update={"silent": True})}
+    )
+
+    await _post_everything(quiet, telegram, at)
+
+    assert telegram.silent == [True, True, True]  # the week, the day and the change text
+
+
 async def test_past_days_dropped_by_the_site_stay_on_the_picture(
     bot: BotService, bot_config: AppConfig, telegram: FakeTelegram, at: Clock
 ) -> None:
