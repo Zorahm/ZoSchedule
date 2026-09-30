@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Данные
+*.db
+*.db-wal
+*.db-shm
+.groups_cache.json
+
+# Редакторы и ОС
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Секреты и локальные переопределения
+.env
+config.local.toml
+
+# Картинки бота (python -m app.bot preview)
+bot-preview/
+
+# Claude Code
+.claude/
