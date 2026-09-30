@@ -1,0 +1,131 @@
+[
+  {
+    "date": "2026-09-04T00:00:00+03:00",
+    "dayOfWeek": "Пятница",
+    "isToday": false,
+    "isNearestDay": false,
+    "lessons": [
+      {
+        "id": "1000",
+        "date": "2026-09-04T00:00:00+03:00",
+        "startAt": "2026-09-04 10:10:00",
+        "endAt": "2026-09-04 11:40:00",
+        "time": "10:10-11:40",
+        "type": "лекция",
+        "building": "Корпус \"Варшавский\"",
+        "buildingAbbreviation": "В",
+        "room": "501",
+        "discipline": { "id": "d9", "name": "Учебная практика" },
+        "groups": [{ "id": "g1", "name": "ОККИПд-307" }],
+        "teacher": { "id": "t9", "name": "Захарова О. Н." },
+        "isLastLesson": null
+      }
+    ]
+  },
+  {
+    "date": "2026-09-07T00:00:00+03:00",
+    "dayOfWeek": "Понедельник",
+    "isToday": true,
+    "isNearestDay": true,
+    "lessons": [
+      {
+        "id": "1001",
+        "date": "2026-09-07T00:00:00+03:00",
+        "startAt": "2026-09-07 08:30:00",
+        "endAt": "2026-09-07 10:00:00",
+        "time": "08:30-10:00",
+        "type": "лекция",
+        "building": "Корпус \"Сокол\"",
+        "buildingAbbreviation": "Л-к.1",
+        "room": "208",
+        "discipline": { "id": "d1", "name": "Основы алгоритмизации" },
+        "groups": [{ "id": "g1", "name": "ОККИПд-307" }],
+        "teacher": { "id": "t1", "name": "Ковалёв Д. А." },
+        "isLastLesson": null
+      },
+      {
+        "id": "1003",
+        "date": "2026-09-07T00:00:00+03:00",
+        "startAt": "2026-09-07 10:10:00",
+        "endAt": "2026-09-07 11:40:00",
+        "time": "10:10-11:40",
+        "type": "практическое занятие",
+        "building": "Корпус \"Сокол\"",
+        "buildingAbbreviation": "Л-к.1",
+        "room": "310",
+        "discipline": { "id": "d2", "name": "Иностранный язык" },
+        "groups": [{ "id": "g1", "name": "ОККИПд-307" }],
+        "teacher": { "id": "t3", "name": "Петров А. А." },
+        "isLastLesson": null
+      },
+      {
+        "id": "1004",
+        "date": "2026-09-07T00:00:00+03:00",
+        "startAt": "2026-09-07 12:10:00",
+        "endAt": "2026-09-07 13:40:00",
+        "time": "12:10-13:40",
+        "type": "лекция",
+        "building": "Корпус \"Сокол\"",
+        "buildingAbbreviation": "Л-к.1",
+        "room": "415",
+        "discipline": { "id": "d3", "name": "Дискретная математика" },
+        "groups": [{ "id": "g1", "name": "ОККИПд-307" }],
+        "teacher": null,
+        "isLastLesson": null
+      },
+      {
+        "id": "1005",
+        "date": "2026-09-07T00:00:00+03:00",
+        "startAt": "2026-09-07 15:30:00",
+        "endAt": "2026-09-07 17:00:00",
+        "time": "15:30-17:00",
+        "type": "практическое занятие",
+        "building": "Корпус \"Сокол\"",
+        "buildingAbbreviation": "Л-к.1",
+        "room": "305",
+        "discipline": { "id": "d4", "name": "Инженерная графика" },
+        "groups": [{ "id": "g1", "name": "ОККИПд-307" }],
+        "teacher": { "id": "t4", "name": "Русакова Е. П." },
+        "isLastLesson": true
+      }
+    ]
+  },
+  {
+    "date": "2026-09-08T00:00:00+03:00",
+    "dayOfWeek": "Вторник",
+    "isToday": false,
+    "isNearestDay": false,
+    "lessons": [
+      {
+        "id": "1006",
+        "date": "2026-09-08T00:00:00+03:00",
+        "startAt": "2026-09-08 10:10:00",
+        "endAt": "2026-09-08 11:40:00",
+        "time": "10:10-11:40",
+        "type": "практическое занятие",
+        "building": "Корпус \"Сокол\"",
+        "buildingAbbreviation": "Л-к.1",
+        "room": "415",
+        "discipline": { "id": "d3", "name": "Дискретная математика" },
+        "groups": [{ "id": "g1", "name": "ОККИПд-307" }],
+        "teacher": { "id": "t5", "name": "Синицына Т. В." },
+        "isLastLesson": null
+      },
+      {
+        "id": "1007",
+        "date": "2026-09-08T00:00:00+03:00",
+        "startAt": "2026-09-08 12:10:00",
+        "endAt": "2026-09-08 13:40:00",
+        "time": "12:10-13:40",
+        "type": "лекция",
+        "building": "Корпус \"Сокол\"",
+        "buildingAbbreviation": "Л-к.1",
+        "room": "301",
+        "discipline": { "id": "d5", "name": "Архитектура компьютерных систем" },
+        "groups": [{ "id": "g1", "name": "ОККИПд-307" }],
+        "teacher": { "id": "t6", "name": "Гаврилов И. С." },
+        "isLastLesson": true
+      }
+    ]
+  }
+]

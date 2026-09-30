@@ -1,0 +1,53 @@
+[project]
+name = "zoschedule-backend"
+version = "0.1.0"
+description = "Снимки расписания МТИ, диффы между ними и Telegram-бот поверх"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+    "aiohttp>=3.9",
+    "aiogram>=3.13,<4",
+    # Прокси для Telegram (ZOSCHEDULE_BOT_PROXY): aiogram без него не принимает даже http-прокси.
+    "aiohttp-socks>=0.8",
+    # Картинки расписания рисует браузер: подойдёт установленный Chrome/Edge, иначе
+    # после установки выполните `playwright install chromium`.
+    "playwright>=1.45",
+    # zoneinfo на Windows не имеет системной базы часовых поясов, а TZ у нас
+    # прибит к Москве — без tzdata приложение не поднимется.
+    "tzdata>=2024.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pyright>=1.1.380",
+    "mypy>=1.11",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.pyright]
+include = ["app", "tests"]
+typeCheckingMode = "strict"
+pythonVersion = "3.11"
+# parser.py лежит в корне репозитория, вне пакета backend.
+extraPaths = [".."]
+reportMissingTypeStubs = false
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["app", "tests"]
+# pyright и mypy расходятся в сужении Any через isinstance: первому нужен cast,
+# второй считает его лишним. Оставляем cast — он даёт безопасность, а
+# redundant-cast всего лишь стилевая придирка.
+disable_error_code = ["redundant-cast"]
+
+[[tool.mypy.overrides]]
+module = ["parser"]
+ignore_missing_imports = true
+follow_imports = "skip"
