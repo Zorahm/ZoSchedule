@@ -108,6 +108,13 @@ class PictureBuilder:
             ),
         )
 
+    def day_end(self, day: dt.date) -> str | None:
+        """When the day's last lesson ends, "HH:MM", without rendering; None if it has none."""
+        loaded = self._load(day, 1)
+        if loaded is None or not loaded.days[0].lessons:
+            return None
+        return loaded.days[0].lessons[-1].end
+
     async def today(self, day: dt.date, *, force: bool = False) -> Picture | None:
         """None when there is nothing worth posting: no data, unpublished, or a day off."""
         monday = week_monday(day)

@@ -43,6 +43,10 @@ class BotConfig(BaseModel):
 
 
     today_at: dt.time = dt.time(7, 0)
+    day_ahead: bool = False
+    """Post the day's picture the evening before, at `today_at` of the previous day.
+
+    At midnight the caption turns from "Завтра" into "Сегодня" by itself (see `sync_pictures`)."""
     week_at: dt.time = dt.time(7, 0)
     pin_week: bool = True
     silent: bool = False
