@@ -44,9 +44,10 @@ class BotConfig(BaseModel):
 
     today_at: dt.time = dt.time(7, 0)
     day_ahead: bool = False
-    """Post the day's picture the evening before, at `today_at` of the previous day.
+    """Post tomorrow's picture as soon as today's last lesson ends, replacing today's.
 
-    At midnight the caption turns from "Завтра" into "Сегодня" by itself (see `sync_pictures`)."""
+    On a day without lessons at `today_at`. At midnight the caption turns from "Завтра"
+    into "Сегодня" by itself (see `sync_pictures`)."""
     week_at: dt.time = dt.time(7, 0)
     pin_week: bool = True
     silent: bool = False
