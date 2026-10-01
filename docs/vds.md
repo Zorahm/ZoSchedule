@@ -219,8 +219,10 @@ mv backend/zoschedule.db backend/zoschedule-старая.db
 **Доверенные:** список `ZOSCHEDULE_BOT_TRUSTED_USERS` в `.env` (или `trusted_users` в
 `config.toml`; `.env` приоритетнее). После правки `./install.sh restart`.
 
-**Время постов:** `today_at` и `week_at` в `config.toml`, по Москве. После правки
-`./install.sh restart`.
+**Время постов:** `today_at` и `week_at` в `config.toml`, по Москве. Чтобы день
+приходил накануне, включите `day_ahead = true`: в `today_at` уйдёт завтрашний день, а
+сегодняшний провисит до конца пар.
+После правки `./install.sh restart`.
 
 ## 9. Резервная копия
 
