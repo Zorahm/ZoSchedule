@@ -3,8 +3,9 @@
 Cycle (Moscow time), once a chat has been chosen with /go:
 - Sunday, `week_at`: the next week's image is posted and pinned; last week's is retired.
 - Every day, `today_at`: yesterday's "today" and change texts are deleted, today's image is posted.
-  With `day_ahead`, tomorrow's image instead, captioned "Завтра"; at midnight sync turns
-  that into "Сегодня". Today's image stays until its last lesson ends and tomorrow's is up.
+  With `day_ahead`, tomorrow's image instead, posted as soon as today's last lesson ends
+  (at `today_at` on a day without lessons), and today's image is retired. Captioned
+  "Завтра"; at midnight sync turns that into "Сегодня".
 - New change events: one text message (a new message, so it pushes).
 - Whenever the pictured lessons differ from the latest snapshot, the image is
   edited in place. Detected by fingerprint, not by events: the diff cannot see
@@ -203,11 +204,28 @@ class BotService:
     def _day_is_over(picture: Picture) -> bool:
         return picture.last_end is not None and moscow.now().strftime("%H:%M") >= picture.last_end
 
+    def _lessons_over(self) -> bool | None:
+        """Whether today's last lesson has ended; None when today has no lessons."""
+        end = self._pictures.day_end(moscow.today())
+        return None if end is None else moscow.now().strftime("%H:%M") >= end
+
+    def _day_due(self) -> bool:
+        """Time for the day's picture: `today_at`, or with `day_ahead` the end of today's lessons."""
+        at_time = moscow.now().time() >= self._config.bot.today_at
+        if not self._config.bot.day_ahead:
+            return at_time
+        over = self._lessons_over()
+        # While today's lessons are on, the chat needs today's picture, not tomorrow's.
+        return at_time if over is None else over
+
+    async def _post_today_when_due(self) -> None:
+        if self._day_due():
+            await self.post_today()
+
     async def retire_finished_days(self) -> int:
         """With `day_ahead`: today's picture goes once its lessons are over and tomorrow's is up.
 
-        Not earlier: with a morning `today_at` the chat needs today's lessons all day long.
-        Not without the next picture either: an evening `today_at` would leave a gap.
+        Not without the next picture: on the eve of a day off the finished day stays.
         """
         if not self._config.bot.day_ahead:
             return 0
@@ -216,8 +234,7 @@ class BotService:
             posted = bot_store.all_of_kind(conn, chat_id=self._chat, kind="today")
         if not any(message.day > today for message in posted):
             return 0
-        end = self._pictures.day_end(today)
-        today_over = end is None or moscow.now().strftime("%H:%M") >= end
+        today_over = self._lessons_over() is not False
         stale = [m for m in posted if m.day < today or (m.day == today and today_over)]
         for message in stale:
             await self._retire(message)
@@ -423,7 +440,7 @@ class BotService:
         await self._guarded("refresh", self.refresh)
         if now.time() >= bot.today_at:
             await self._guarded("cleanup", lambda: self.cleanup(now.date()))
-            await self._guarded("today", self.post_today)
+        await self._guarded("today", self._post_today_when_due)
         await self._guarded("finished", self.retire_finished_days)
         if now.weekday() == 6 and now.time() >= bot.week_at:
             await self._guarded("week", self.post_week)
