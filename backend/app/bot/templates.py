@@ -14,6 +14,8 @@ from collections.abc import Sequence
 
 from app.bot import texts
 from app.bot.fonts import font_css
+from app.bot.night import NIGHT_CSS
+from app.bot.theme import Theme
 from app.bot.view import WEEK_DAYS, DayView, Header, LessonView, RetakeView, StreamGroup, Tone
 from app.models.domain import RETAKE_KIND, weekday_ru
 
@@ -160,11 +162,12 @@ def _esc(value: str) -> str:
     return html.escape(value, quote=True)
 
 
-def _page(body: str, *, height: int, gap: int) -> str:
+def _page(body: str, *, height: int, gap: int, theme: Theme) -> str:
+    night = theme == "night"
     return (
         '<!doctype html><html lang="ru"><head><meta charset="utf-8">'
-        f"<style>{font_css()}{_CSS}</style></head>"
-        f'<body><div class="frame" style="--h:{height}px;--gap:{gap}px">{body}</div>'
+        f"<style>{font_css()}{_CSS}{NIGHT_CSS if night else ''}</style></head>"
+        f'<body><div class="frame{" night" if night else ""}" style="--h:{height}px;--gap:{gap}px">{body}</div>'
         f"<script>{_FIT_SCRIPT}</script></body></html>"
     )
 
@@ -282,7 +285,9 @@ def _legend(day: DayView) -> str:
     return f'<div class="legend">{lines}</div>' if lines else ""
 
 
-def day_html(day: DayView, week: Sequence[DayView], header: Header) -> str:
+def day_html(
+    day: DayView, week: Sequence[DayView], header: Header, theme: Theme = "light"
+) -> str:
     """The "today" image. `week` supplies the Mon–Sat strip with `day` highlighted."""
     sub = f"{texts.date_long(day.date)}"
     if day.lessons:
@@ -301,7 +306,7 @@ def day_html(day: DayView, week: Sequence[DayView], header: Header) -> str:
         f"{_legend(day)}"
         f"{_footer(header)}"
     )
-    return _page(body, height=1350, gap=32)
+    return _page(body, height=1350, gap=32, theme=theme)
 
 
 def _week_lesson(lesson: LessonView) -> str:
@@ -363,7 +368,7 @@ def _kinds_legend(days: Sequence[DayView]) -> str:
     return f'<div class="kinds">{items}</div>' if items else ""
 
 
-def week_html(days: Sequence[DayView], header: Header) -> str:
+def week_html(days: Sequence[DayView], header: Header, theme: Theme = "light") -> str:
     """The pinned "week" image: Monday to Saturday, one row per day."""
     assert len(days) == WEEK_DAYS
     total = sum(len(day.lessons) for day in days)
@@ -376,4 +381,4 @@ def week_html(days: Sequence[DayView], header: Header) -> str:
         f"{_kinds_legend(days)}"
         f"{_footer(header)}"
     )
-    return _page(body, height=1600, gap=28)
+    return _page(body, height=1600, gap=28, theme=theme)

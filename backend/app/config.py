@@ -7,9 +7,10 @@ import os
 import tomllib
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal, Self
 from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_CONFIG = _REPO_ROOT / "config.toml"
@@ -52,6 +53,10 @@ class BotConfig(BaseModel):
     pin_week: bool = True
     silent: bool = False
     """Send every post without a sound (Telegram's `disable_notification`)."""
+    theme: Literal["auto", "light", "night"] = "auto"
+    """Look of the pictures. `auto`: night between `night_from` and `night_to`, Moscow time."""
+    night_from: dt.time = dt.time(20, 0)
+    night_to: dt.time = dt.time(7, 0)
     refresh: bool = True
     """Poll the site from the bot itself, every `poll.interval_minutes`."""
     browser_path: Path | None = None
@@ -67,6 +72,13 @@ class BotConfig(BaseModel):
     """Proxy for Telegram only (the college site is fetched directly). Optional.
 
     A secret: the URL may hold a login and password."""
+
+    @model_validator(mode="after")
+    def _night_has_a_length(self) -> Self:
+        # При равных границах непонятно, ночь это целые сутки или ни минуты.
+        if self.night_from == self.night_to:
+            raise ValueError("night_from и night_to не должны совпадать")
+        return self
 
     @field_validator("trusted_users", mode="before")
     @classmethod

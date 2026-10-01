@@ -9,7 +9,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, replace
 
 from app import moscow
-from app.bot import templates, texts
+from app.bot import templates, texts, theme
 from app.bot.renderer import Renderer
 from app.bot.view import WEEK_DAYS, DayView, Header, build_days, week_monday
 from app.config import AppConfig
@@ -58,6 +58,9 @@ class PictureBuilder:
         self._config = config
         self._renderer = renderer
 
+    def _theme(self) -> theme.Theme:
+        return theme.resolve(self._config.bot, moscow.now())
+
     def _load(self, start: dt.date, count: int) -> _Snapshot | None:
         with connect(self._config.db_path) as conn:
             snapshot = store.latest_ok(conn)
@@ -91,7 +94,8 @@ class PictureBuilder:
         loaded = self._load(monday, WEEK_DAYS)
         if loaded is None:
             return None
-        html = templates.week_html(loaded.days, loaded.header)
+        look = self._theme()
+        html = templates.week_html(loaded.days, loaded.header, look)
         caption = texts.with_notes(
             texts.week_caption(monday, monday + dt.timedelta(days=WEEK_DAYS - 1)),
             [
@@ -104,7 +108,7 @@ class PictureBuilder:
             png=await self._renderer.render(html),
             caption=caption,
             fingerprint=_fingerprint(
-                lambda header: templates.week_html(loaded.days, header), loaded.header, caption
+                lambda header: templates.week_html(loaded.days, header, look), loaded.header, caption
             ),
         )
 
@@ -125,7 +129,8 @@ class PictureBuilder:
         if not force and (view.coverage == "unpublished" or not view.lessons):
             return None
         strip = loaded.days[:WEEK_DAYS]
-        html = templates.day_html(view, strip, loaded.header)
+        look = self._theme()
+        html = templates.day_html(view, strip, loaded.header, look)
         caption = texts.with_notes(
             texts.day_caption(day, moscow.today()),
             [texts.retake_note(retake.sentence(), retake.start, retake.end) for retake in view.retakes],
@@ -134,7 +139,7 @@ class PictureBuilder:
             png=await self._renderer.render(html),
             caption=caption,
             fingerprint=_fingerprint(
-                lambda header: templates.day_html(view, strip, header), loaded.header, caption
+                lambda header: templates.day_html(view, strip, header, look), loaded.header, caption
             ),
             last_end=view.lessons[-1].end if view.lessons else None,
         )
