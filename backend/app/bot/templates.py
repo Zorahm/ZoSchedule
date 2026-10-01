@@ -73,6 +73,7 @@ h1{font-family:Unbounded,'Arial Black',sans-serif;font-size:96px;line-height:100
 .chip span:first-child{text-transform:uppercase}
 .chip span:last-child{font-weight:400}
 .chip.on{background:#ff4d2e;border-color:#ff4d2e}
+.chip.off{background:#228B22;border-color:#228B22;color:#fff}
 .list{display:flex;flex-direction:column;gap:16px;flex-grow:1}
 .card{display:grid;grid-template-columns:168px minmax(0,1fr) auto;background:#fbf8f2;
   border:1px solid #d9cfbf;border-radius:10px;padding:24px 28px;flex-grow:1;align-items:center}
@@ -110,6 +111,7 @@ h1{font-family:Unbounded,'Arial Black',sans-serif;font-size:96px;line-height:100
 .empty{flex-grow:1;display:flex;align-items:center;justify-content:center;
   background:#fbf8f2;border:1px dashed #d9cfbf;border-radius:10px;font-size:34px;
   color:#5c5347}
+.empty.off{font-size:64px;line-height:72px;font-weight:800;color:#1a1611}
 .foot{display:flex;align-items:center;justify-content:space-between;padding-top:24px;
   border-top:1px solid #d9cfbf}
 .logo{font-family:Unbounded,'Arial Black',sans-serif;font-size:30px;line-height:36px;
@@ -224,9 +226,21 @@ def _card(lesson: LessonView) -> str:
     )
 
 
+def _is_day_off(day: DayView) -> bool:
+    """Published and free. An unpublished day is not: "not out yet" must not read as free."""
+    return day.coverage == "published" and not day.lessons
+
+
+def _chip_class(day: DayView, active: dt.date) -> str:
+    # The pictured day stays orange even when it is a day off: the strip says which day this is.
+    if day.date == active:
+        return " on"
+    return " off" if _is_day_off(day) else ""
+
+
 def _strip(days: Sequence[DayView], active: dt.date) -> str:
     chips = "".join(
-        f'<div class="chip{" on" if day.date == active else ""}">'
+        f'<div class="chip{_chip_class(day, active)}">'
         f"<span>{texts.WEEKDAYS_SHORT[day.date.weekday()]}</span><span>{day.date.day}</span></div>"
         for day in days
     )
@@ -238,7 +252,9 @@ def _empty_label(day: DayView) -> str:
 
 
 def _day_empty(day: DayView) -> str:
-    return f'<div class="empty">{_empty_label(day)}</div>'
+    # Only a day off gets the big bold word: "not published" must not look like it.
+    off = " off" if _is_day_off(day) else ""
+    return f'<div class="empty{off}">{_empty_label(day)}</div>'
 
 
 def _retake_card(retake: RetakeView) -> str:
@@ -271,14 +287,17 @@ def day_html(day: DayView, week: Sequence[DayView], header: Header) -> str:
     sub = f"{texts.date_long(day.date)}"
     if day.lessons:
         sub += f' · <b>{texts.lessons_count(len(day.lessons))} · {day.span}</b>'
-    cards = "".join(_card(lesson) for lesson in day.lessons) or _day_empty(day)
     retakes = "".join(_retake_card(retake) for retake in day.retakes)
+    if day.lessons:
+        content = "".join(_card(lesson) for lesson in day.lessons) + retakes
+    else:
+        content = retakes + _day_empty(day)  # on a free day the retake is the news: it goes first
     body = (
         f"{_top(header)}"
         f'<div style="display:flex;flex-direction:column;gap:12px"><h1>{weekday_ru(day.date)}</h1>'
         f'<div class="sub">{sub}</div></div>'
         f"{_strip(week, day.date)}"
-        f'<div class="list">{cards}{retakes}</div>'
+        f'<div class="list">{content}</div>'
         f"{_legend(day)}"
         f"{_footer(header)}"
     )
@@ -315,8 +334,7 @@ def _week_row(day: DayView) -> str:
         content = f'<div class="none">{_empty_label(day)}</div>'
     content += "".join(_week_retake(retake) for retake in day.retakes)
     weight = len(day.lessons) + len(day.retakes) or 1
-    # A day off is marked; an unpublished day is not: "not out yet" must not read as free.
-    off = " off" if day.coverage == "published" and not day.lessons else ""
+    off = " off" if _is_day_off(day) else ""
     return (
         f'<div class="row{off}" style="flex-grow:{weight}">'
         # The day off's green sits inside the column: the column keeps its width and divider.
