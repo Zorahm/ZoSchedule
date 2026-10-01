@@ -123,7 +123,7 @@ h1{font-family:Unbounded,'Arial Black',sans-serif;font-size:96px;line-height:100
   border-right:1px solid #d9cfbf;align-self:stretch;justify-content:center}
 .dow{font-family:Onest,system-ui,sans-serif;font-size:76px;line-height:72px;font-weight:800;
   letter-spacing:-.02em;text-transform:uppercase}
-.dat{font-size:22px;line-height:28px;color:#5c5347}
+.dat{font-size:22px;line-height:28px;color:#5c5347;white-space:nowrap}
 .ls{display:flex;flex-direction:column;gap:10px;padding-left:16px;min-width:0}
 .ln{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:12px;align-items:baseline}
 .ln .t{font-family:'JetBrains Mono',monospace;font-size:24px;line-height:30px;font-weight:600}
@@ -137,8 +137,9 @@ h1{font-family:Unbounded,'Arial Black',sans-serif;font-size:96px;line-height:100
 .dot{display:inline-block;flex:none;width:14px;height:14px;border-radius:50%;background:var(--dot)}
 .kinds{display:flex;flex-wrap:wrap;gap:12px 32px;font-size:22px;line-height:28px;color:#5c5347}
 .kinds span{display:inline-flex;align-items:center;gap:10px}
-.row.off .who{background:#228B22;border-right:none;border-radius:8px;
-  margin:-8px 16px -8px -8px;padding:10px 14px}
+.wd{display:flex;flex-direction:column;gap:6px}
+.row.off .wd{align-self:stretch;background:#228B22;border-radius:8px;padding:8px 10px;
+  margin-left:-10px}
 .row.off .dow{color:#fff}
 .row.off .dat{color:#e6f4e6}
 .none{font-size:24px;line-height:30px;color:#5c5347}
@@ -318,8 +319,9 @@ def _week_row(day: DayView) -> str:
     off = " off" if day.coverage == "published" and not day.lessons else ""
     return (
         f'<div class="row{off}" style="flex-grow:{weight}">'
-        f'<div class="who"><div class="dow">{texts.WEEKDAYS_SHORT[day.date.weekday()]}</div>'
-        f'<div class="dat">{texts.date_long(day.date)}</div></div>'
+        # The day off's green sits inside the column: the column keeps its width and divider.
+        f'<div class="who"><div class="wd"><div class="dow">{texts.WEEKDAYS_SHORT[day.date.weekday()]}</div>'
+        f'<div class="dat">{texts.date_long(day.date)}</div></div></div>'
         f'<div class="ls">{content}</div></div>'
     )
 
