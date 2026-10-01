@@ -14,7 +14,7 @@ from collections.abc import Sequence
 
 from app.bot import texts
 from app.bot.fonts import font_css
-from app.bot.view import WEEK_DAYS, DayView, Header, LessonView, RetakeView, StreamGroup
+from app.bot.view import WEEK_DAYS, DayView, Header, LessonView, RetakeView, StreamGroup, Tone
 from app.models.domain import RETAKE_KIND, weekday_ru
 
 FRAME_SELECTOR = ".frame"
@@ -131,6 +131,16 @@ h1{font-family:Unbounded,'Arial Black',sans-serif;font-size:96px;line-height:100
   text-overflow:ellipsis}
 .ln .r{font-family:'JetBrains Mono',monospace;font-size:20px;line-height:30px;color:#5c5347}
 .ln.exam .t{color:#ff4d2e}
+.k-blue{--dot:#3b6fd1}.k-green{--dot:#3f9a4c}.k-red{--dot:#e0442a}.k-gray{--dot:#a69a88}
+.ln .n.kd::after{content:"";display:inline-block;width:14px;height:14px;margin-left:12px;
+  border-radius:50%;vertical-align:middle;background:var(--dot)}
+.dot{display:inline-block;flex:none;width:14px;height:14px;border-radius:50%;background:var(--dot)}
+.kinds{display:flex;flex-wrap:wrap;gap:12px 32px;font-size:22px;line-height:28px;color:#5c5347}
+.kinds span{display:inline-flex;align-items:center;gap:10px}
+.row.off .who{background:#228B22;border-right:none;border-radius:8px;
+  margin:-8px 16px -8px -8px;padding:10px 14px}
+.row.off .dow{color:#fff}
+.row.off .dat{color:#e6f4e6}
 .none{font-size:24px;line-height:30px;color:#5c5347}
 .tag.retake{background:#ff4d2e;border-color:#ff4d2e}
 .card.retake{flex-grow:0;background:#fff1ec;border-color:#ff4d2e}
@@ -281,7 +291,8 @@ def _week_lesson(lesson: LessonView) -> str:
     room = _esc(lesson.room or "")
     return (
         f'<div class="ln{exam}"><div class="t">{lesson.start}</div>'
-        f'<div class="n">{_esc(texts.short_title(lesson.title))}</div>'
+        # The kind's dot is a pseudo-element: the name's text and width checks stay as they were.
+        f'<div class="n kd k-{lesson.tone}">{_esc(texts.short_title(lesson.title))}</div>'
         f'<div class="r">{room}</div></div>'
     )
 
@@ -303,12 +314,33 @@ def _week_row(day: DayView) -> str:
         content = f'<div class="none">{_empty_label(day)}</div>'
     content += "".join(_week_retake(retake) for retake in day.retakes)
     weight = len(day.lessons) + len(day.retakes) or 1
+    # A day off is marked; an unpublished day is not: "not out yet" must not read as free.
+    off = " off" if day.coverage == "published" and not day.lessons else ""
     return (
-        f'<div class="row" style="flex-grow:{weight}">'
+        f'<div class="row{off}" style="flex-grow:{weight}">'
         f'<div class="who"><div class="dow">{texts.WEEKDAYS_SHORT[day.date.weekday()]}</div>'
         f'<div class="dat">{texts.date_long(day.date)}</div></div>'
         f'<div class="ls">{content}</div></div>'
     )
+
+
+_TONE_ORDER: tuple[Tone, ...] = ("blue", "green", "red", "gray")
+
+
+def _kinds_legend(days: Sequence[DayView]) -> str:
+    """What each dot colour means: only the kinds that are on this week."""
+    kinds: dict[Tone, list[str]] = {}
+    for day in days:
+        for lesson in day.lessons:
+            names = kinds.setdefault(lesson.tone, [])
+            if lesson.kind not in names:
+                names.append(lesson.kind)
+    items = "".join(
+        f'<span><i class="dot k-{tone}"></i>{_esc(", ".join(kinds[tone]))}</span>'
+        for tone in _TONE_ORDER
+        if tone in kinds
+    )
+    return f'<div class="kinds">{items}</div>' if items else ""
 
 
 def week_html(days: Sequence[DayView], header: Header) -> str:
@@ -321,6 +353,7 @@ def week_html(days: Sequence[DayView], header: Header) -> str:
         '<div style="display:flex;flex-direction:column;gap:12px"><h1>Неделя</h1>'
         f'<div class="sub">{texts.range_long(first, last)} · <b>{texts.lessons_count(total)}</b></div></div>'
         f'<div class="days">{"".join(_week_row(day) for day in days)}</div>'
+        f"{_kinds_legend(days)}"
         f"{_footer(header)}"
     )
     return _page(body, height=1600, gap=28)
