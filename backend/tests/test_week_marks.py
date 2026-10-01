@@ -1,4 +1,4 @@
-"""The week picture marks days off in green and each lesson's kind with a coloured dot."""
+"""Days off are green on the week picture and in the day picture's strip; lesson kinds get a dot."""
 
 from __future__ import annotations
 
@@ -66,3 +66,43 @@ def test_the_legend_explains_only_the_kinds_on_the_week(config: AppConfig) -> No
 def test_a_week_without_lessons_has_no_legend(config: AppConfig) -> None:
     empty = [replace(day, lessons=()) for day in _week(config)]
     assert 'class="kinds"' not in templates.week_html(empty, HEADER)
+
+
+def _chips(page: str) -> list[str]:
+    return re.findall(r'<div class="chip([^"]*)"', page)
+
+
+def test_the_day_pictures_strip_marks_days_off_too(config: AppConfig) -> None:
+    week = _week(config)
+    page = templates.day_html(week[1], week, HEADER)  # Tuesday
+    # Tuesday is the pictured day; Thursday (only a retake) and Friday are off.
+    assert [chip.strip() for chip in _chips(page)] == ["", "on", "", "off", "off", ""]
+
+
+def test_the_pictured_day_stays_orange_even_when_it_is_off(config: AppConfig) -> None:
+    week = _week(config)
+    page = templates.day_html(week[4], week, HEADER)  # Friday, a day off
+    assert _chips(page)[4].strip() == "on"
+
+
+def test_an_unpublished_day_is_not_green_in_the_strip(config: AppConfig) -> None:
+    week = _week(config, published=False)
+    assert "off" not in "".join(_chips(templates.day_html(week[1], week, HEADER)))
+
+
+def test_on_a_day_off_the_retake_comes_first_and_the_word_is_big(config: AppConfig) -> None:
+    week = _week(config)
+    page = templates.day_html(week[3], week, HEADER)  # Thursday: only a retake
+    assert page.index('class="card retake"') < page.index('class="empty off"')
+
+
+def test_on_a_school_day_the_retake_still_follows_the_lessons(config: AppConfig) -> None:
+    week = _week(config)
+    page = templates.day_html(week[0], week, HEADER)  # Monday: lessons and a retake
+    assert page.rindex('<div class="card">') < page.index('class="card retake"')
+
+
+def test_not_published_does_not_get_the_big_day_off_word(config: AppConfig) -> None:
+    week = _week(config, published=False)
+    page = templates.day_html(week[4], week, HEADER)
+    assert 'class="empty"' in page and 'class="empty off"' not in page
