@@ -26,7 +26,10 @@ SUNDAY = dt.date(2026, 10, 4)
 
 @pytest.fixture
 def ahead_config(config: AppConfig) -> AppConfig:
-    bot = BotConfig(token=SecretStr("token"), chat_id=CHAT, today_at=dt.time(7, 0), day_ahead=True)
+    # Тема закреплена: тест про цикл «Завтра» → «Сегодня», а не про перерисовку под ночь.
+    bot = BotConfig(
+        token=SecretStr("token"), chat_id=CHAT, today_at=dt.time(7, 0), day_ahead=True, theme="light"
+    )
     return config.model_copy(update={"bot": bot})
 
 
