@@ -12,7 +12,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.session.base import BaseSession
 from aiogram.enums import ParseMode
-from aiogram.types import BotCommand
+from aiogram.types import BotCommand, BotCommandScopeChat
 
 from app.bot import errors, handlers
 from app.bot.middleware import UpdateOffset
@@ -20,6 +20,7 @@ from app.bot.renderer import PlaywrightRenderer
 from app.bot.service import BotService
 from app.config import AppConfig
 from app.snapshots.service import ScheduleService
+from app.web import server as web_server
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ async def open_service(
         await bot.session.close()
 
 
-async def _on_startup(bot: Bot) -> None:
+async def _on_startup(bot: Bot, service: BotService) -> None:
     # Cosmetic, and Telegram may be unreachable right now: the bot must still start.
     try:
         me = await bot.me()
@@ -79,6 +80,22 @@ async def _on_startup(bot: Bot) -> None:
         logger.warning("Не удалось представиться Telegram: %s", error)
     else:
         logger.info("Бот слушает команды как @%s", me.username)
+    if service.web_url is not None:
+        await _announce_journal(bot, service)
+
+
+async def _announce_journal(bot: Bot, service: BotService) -> None:
+    """The headmen's private chats get /attendance in their command menu. Cosmetic, per person.
+
+    A person who has never written to the bot has no chat with it yet: Telegram refuses, and
+    that is fine, the command appears after their first /start.
+    """
+    command = BotCommand(command="attendance", description="Журнал посещаемости")
+    for user_id in sorted(service.headmen):
+        try:
+            await bot.set_my_commands([command], scope=BotCommandScopeChat(chat_id=user_id))
+        except errors.TELEGRAM_ERRORS as error:
+            logger.info("Команду журнала для %s не поставить (чата с ботом ещё нет?): %s", user_id, error)
 
 
 def build_dispatcher(service: BotService) -> Dispatcher:
@@ -115,7 +132,7 @@ async def run_forever(config: AppConfig, schedule: ScheduleService | None = None
         if config.bot.proxy_label:
             logger.info("Telegram через прокси %s", config.bot.proxy_label)
         dispatcher = build_dispatcher(service)
-        await asyncio.gather(
+        loops = [
             run_ticks(service),
             dispatcher.start_polling(  # pyright: ignore[reportUnknownMemberType]  # aiogram's UNSET default
                 service.bot,
@@ -125,4 +142,10 @@ async def run_forever(config: AppConfig, schedule: ScheduleService | None = None
                 # The bot may live inside another app that owns the signals.
                 handle_signals=False,
             ),
-        )
+        ]
+        if config.web.enabled:
+            if not (config.bot.headmen or config.bot.trusted_users):
+                logger.warning("headmen и trusted_users пусты: в журнал посещаемости не войдёт никто")
+            # The journal's own failure to start is logged inside and never stops the bot.
+            loops.append(web_server.serve(config, service))
+        await asyncio.gather(*loops)

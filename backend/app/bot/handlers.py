@@ -21,7 +21,7 @@ from aiogram import Bot, F, Router
 from aiogram.exceptions import TelegramRetryAfter
 from aiogram.filters import Command
 from aiogram.enums import ChatMemberStatus
-from aiogram.types import ChatMemberUpdated, Message
+from aiogram.types import ChatMemberUpdated, InlineKeyboardButton, InlineKeyboardMarkup, Message, WebAppInfo
 
 from app.bot import errors
 from app.bot.service import BotService
@@ -81,6 +81,30 @@ async def stop(message: Message, service: BotService) -> None:
         await message.answer("Больше не пишу в этот чат. Вернуть: /go.", disable_notification=True)
     else:
         await message.answer("Сюда я и не пишу. Начать: /go.", disable_notification=True)
+
+
+async def open_journal(message: Message, service: BotService) -> None:
+    """/start and /attendance in a private chat: a button that opens the attendance journal.
+
+    Only for headmen. Anyone else is ignored without a word, like everywhere in this bot.
+    """
+    user = message.from_user
+    if user is None or user.id not in service.headmen:
+        return
+    url = service.web_url
+    if url is None:
+        await message.answer(
+            "Журнал выключен: задайте web.public_url в config.toml (или ZOSCHEDULE_WEB_URL в .env).",
+            disable_notification=True,
+        )
+        return
+    button = InlineKeyboardButton(text="Открыть журнал", web_app=WebAppInfo(url=url))
+    await message.answer(
+        "Журнал посещаемости. День открывается сам, когда начинается первая пара.",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[[button]]),
+        disable_notification=True,
+    )
+    await service.pin_journal_button(user.id)
 
 
 async def curator_notice(message: Message, service: BotService) -> None:
@@ -181,6 +205,9 @@ def build_router() -> Router:
     router.message.register(go_outside_a_group, Command("go", ignore_case=True), ~_IN_GROUP)
     router.message.register(go, Command("go", ignore_case=True), _IN_GROUP)
     router.message.register(stop, Command("stop", ignore_case=True), _IN_GROUP)
+    router.message.register(
+        open_journal, Command("start", "attendance", ignore_case=True), F.chat.type == "private"
+    )
     router.message.register(tidy_pin_notice, F.pinned_message)
     # aiogram runs only the first handler whose filters pass, so the two must not overlap:
     # this one takes the bot's departure, the next one its arrival.

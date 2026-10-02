@@ -7,7 +7,7 @@ import os
 import tomllib
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal, Self
+from typing import Literal, Self, cast
 from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
@@ -16,6 +16,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_CONFIG = _REPO_ROOT / "config.toml"
 _DEFAULT_DB = _REPO_ROOT / "backend" / "zoschedule.db"
 _DEFAULT_ENV_FILE = _REPO_ROOT / ".env"
+_DEFAULT_ROSTER = _REPO_ROOT / "roster.txt"
 
 
 class GroupConfig(BaseModel):
@@ -42,6 +43,11 @@ TRUSTED_HINT = (
 CURATORS_HINT = (
     "curators: ожидается список положительных Telegram-id людей, "
     "в .env — через запятую: ZOSCHEDULE_BOT_CURATORS=123456789,987654321"
+)
+
+HEADMEN_HINT = (
+    "headmen: ожидается список положительных Telegram-id людей, "
+    "в .env — через запятую: ZOSCHEDULE_BOT_HEADMEN=123456789"
 )
 
 TRUSTED_CHATS_HINT = (
@@ -84,6 +90,11 @@ class BotConfig(BaseModel):
     ("в 13.50 у ОККИПд-307 пара будет в 314 аудитории"). `trusted_users` count too.
 
     Nobody else's message is read as a correction, however much it looks like one."""
+    headmen: list[int] = []
+    """Telegram ids of the people who may open the attendance journal (the Mini App).
+
+    `trusted_users` may too. Nobody else gets in: the server checks the signature
+    Telegram puts on the Mini App's launch data, so a guessed link is worthless."""
     trusted_chats: list[int] = []
     """Telegram ids of the groups (negative numbers) the bot never leaves.
 
@@ -136,6 +147,23 @@ class BotConfig(BaseModel):
             raise ValueError(CURATORS_HINT)
         return sorted(set(value))
 
+    @field_validator("headmen", mode="before")
+    @classmethod
+    def _headmen_from_a_list_or_a_comma_string(cls, value: object) -> object:
+        if isinstance(value, str):
+            try:
+                return [int(part) for part in value.replace(";", ",").split(",") if part.strip()]
+            except ValueError:
+                raise ValueError(HEADMEN_HINT) from None
+        return value
+
+    @field_validator("headmen")
+    @classmethod
+    def _headmen_are_people(cls, value: list[int]) -> list[int]:
+        if any(user_id <= 0 for user_id in value):
+            raise ValueError(HEADMEN_HINT)
+        return sorted(set(value))
+
     @field_validator("trusted_chats", mode="before")
     @classmethod
     def _trusted_chats_from_a_list_or_a_comma_string(cls, value: object) -> object:
@@ -186,6 +214,36 @@ class BotConfig(BaseModel):
         return bool(self.token.get_secret_value())
 
 
+WEB_URL_HINT = "web.public_url: ожидается https-адрес, по которому Telegram откроет журнал"
+
+
+class WebConfig(BaseModel):
+    """The attendance journal's server: a Telegram Mini App the bot serves itself."""
+
+    host: str = "127.0.0.1"
+    """Where to listen. Local by default: a reverse proxy with HTTPS stands in front."""
+    port: int = Field(default=8080, ge=1, le=65535)
+    public_url: str = ""
+    """The address Telegram opens, https only (Telegram refuses anything else).
+
+    Empty: the journal is off, the bot works as before."""
+
+    @field_validator("public_url")
+    @classmethod
+    def _public_url_is_https(cls, value: str) -> str:
+        value = value.strip().rstrip("/")
+        if not value:
+            return ""
+        parsed = urlsplit(value)
+        if parsed.scheme != "https" or not parsed.hostname:
+            raise ValueError(WEB_URL_HINT)
+        return value
+
+    @property
+    def enabled(self) -> bool:
+        return bool(self.public_url)
+
+
 class AppConfig(BaseModel):
     # pydantic decides at the top model whether an error echoes the rejected value, and
     # the bot's proxy URL and token are secrets that must not land in a console or a log.
@@ -194,7 +252,10 @@ class AppConfig(BaseModel):
     group: GroupConfig
     poll: PollConfig = Field(default_factory=PollConfig)
     bot: BotConfig = Field(default_factory=BotConfig)
+    web: WebConfig = Field(default_factory=WebConfig)
     db_path: Path = _DEFAULT_DB
+    roster_path: Path = _DEFAULT_ROSTER
+    """Список группы для первого запуска журнала. Вне git: в нём настоящие ФИО."""
 
 
 def load_dotenv(path: Path) -> None:
@@ -235,6 +296,9 @@ def load_config(path: Path | None = None) -> AppConfig:
     db_override = os.environ.get("ZOSCHEDULE_DB")
     if db_override:
         raw["db_path"] = Path(db_override)
+    roster_override = os.environ.get("ZOSCHEDULE_ROSTER_FILE")
+    if roster_override:
+        raw["roster_path"] = Path(roster_override)
 
     bot_raw = raw.get("bot")
     bot: dict[str, object] = dict(bot_raw) if isinstance(bot_raw, dict) else {}
@@ -246,11 +310,24 @@ def load_config(path: Path | None = None) -> AppConfig:
         ("ZOSCHEDULE_BOT_TRUSTED_USERS", "trusted_users"),
         ("ZOSCHEDULE_BOT_TRUSTED_CHATS", "trusted_chats"),
         ("ZOSCHEDULE_BOT_CURATORS", "curators"),
+        ("ZOSCHEDULE_BOT_HEADMEN", "headmen"),
     ):
         value = os.environ.get(env_name)
         if value:
             bot[field] = value
     raw["bot"] = bot
+
+    web_raw = raw.get("web")
+    web: dict[str, object] = dict(cast("dict[str, object]", web_raw)) if isinstance(web_raw, dict) else {}
+    for env_name, field in (
+        ("ZOSCHEDULE_WEB_URL", "public_url"),
+        ("ZOSCHEDULE_WEB_HOST", "host"),
+        ("ZOSCHEDULE_WEB_PORT", "port"),
+    ):
+        value = os.environ.get(env_name)
+        if value:
+            web[field] = value
+    raw["web"] = web
 
     return AppConfig.model_validate(raw)
 

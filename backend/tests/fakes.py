@@ -20,7 +20,9 @@ from aiogram.methods import (
     GetMe,
     GetUpdates,
     PinChatMessage,
+    SendDocument,
     SendMessage,
+    SetChatMenuButton,
     SendPhoto,
     SetMyCommands,
     TelegramMethod,
@@ -94,6 +96,10 @@ class FakeTelegram:
         self._failures: dict[
             type[TelegramMethod[Any]], tuple[TelegramAPIError, int | None, str | None]
         ] = {}
+        self.documents: list[tuple[str, str]] = []
+        """The chat and file name of every document sent, in order."""
+        self.menu_buttons: list[str] = []
+        """The chat of every menu button set."""
         self.tried: list[str] = []
         """Every method asked for, failed or not, by class name."""
         self._next = 100
@@ -175,6 +181,17 @@ class FakeTelegram:
         if isinstance(method, GetMe):
             return User(id=BOT_ID, is_bot=True, first_name="ZoSchedule", username=BOT_USERNAME)
         if isinstance(method, SetMyCommands):
+            return True
+        if isinstance(method, SendDocument):
+            sent = self._new_message(method.chat_id)
+            self.calls.append(("document", sent.message_id))
+            self.captions.append(method.caption or "")
+            self.chats.append(str(method.chat_id))
+            assert isinstance(method.document, InputFile)
+            self.documents.append((str(method.chat_id), method.document.filename or ""))
+            return sent
+        if isinstance(method, SetChatMenuButton):
+            self.menu_buttons.append(str(method.chat_id))
             return True
         raise AssertionError(f"the bot called {type(method).__name__}, which the fake lacks")
 
