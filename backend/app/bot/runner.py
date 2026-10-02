@@ -97,8 +97,8 @@ async def run_forever(config: AppConfig, schedule: ScheduleService | None = None
         if not config.bot.trusted_users:
             logger.warning(
                 "trusted_users пуст: команду /go не примет никто, а из любой группы, "
-                "куда бота добавят, он выйдет. Задайте id в config.toml или "
-                "ZOSCHEDULE_BOT_TRUSTED_USERS"
+                "куда бота добавят (кроме trusted_chats), он выйдет. Задайте id в "
+                "config.toml или ZOSCHEDULE_BOT_TRUSTED_USERS"
             )
         if config.bot.proxy_label:
             logger.info("Telegram через прокси %s", config.bot.proxy_label)

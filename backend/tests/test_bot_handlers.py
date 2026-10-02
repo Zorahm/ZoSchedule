@@ -328,6 +328,44 @@ async def test_a_group_a_trusted_person_added_the_bot_to_is_kept(
     assert telegram.calls == []  # it waits there for that person's /go
 
 
+@pytest.fixture
+def whitelisted_dispatcher(fresh_config: AppConfig, telegram: FakeTelegram) -> Dispatcher:
+    bot = fresh_config.bot.model_copy(update={"trusted_chats": [-100555, -100777]})
+    config = fresh_config.model_copy(update={"bot": bot})
+    return build_dispatcher(BotService(config, telegram.bot, FakeRenderer()))
+
+
+@pytest.mark.parametrize("chat_id", [-100555, -100777])
+async def test_a_whitelisted_group_is_kept_even_if_a_stranger_added_the_bot(
+    whitelisted_dispatcher: Dispatcher, telegram: FakeTelegram, chat_id: int
+) -> None:
+    await whitelisted_dispatcher.feed_update(telegram.bot, _added(by=STRANGER, chat_id=chat_id))
+
+    assert telegram.calls == []
+
+
+async def test_a_group_outside_the_whitelist_is_still_left(
+    whitelisted_dispatcher: Dispatcher, telegram: FakeTelegram
+) -> None:
+    await whitelisted_dispatcher.feed_update(telegram.bot, _added(by=STRANGER, chat_id=-100999))
+
+    assert telegram.calls == [("leave", -100999)]
+
+
+async def test_a_stranger_still_cannot_command_the_bot_in_a_whitelisted_group(
+    fresh_config: AppConfig, telegram: FakeTelegram
+) -> None:
+    bot = fresh_config.bot.model_copy(update={"trusted_chats": [GROUP_CHAT]})
+    config = fresh_config.model_copy(update={"bot": bot})
+    dispatcher = build_dispatcher(BotService(config, telegram.bot, FakeRenderer()))
+
+    await dispatcher.feed_update(telegram.bot, _go(sender=STRANGER))
+
+    with connect(config.db_path) as conn:
+        assert bot_store.target(conn) is None
+    assert telegram.calls == []
+
+
 async def test_a_promotion_in_a_group_the_bot_already_belongs_to_is_not_being_added(
     dispatcher: Dispatcher, telegram: FakeTelegram
 ) -> None:

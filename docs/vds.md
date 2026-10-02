@@ -219,6 +219,10 @@ mv backend/zoschedule.db backend/zoschedule-старая.db
 **Доверенные:** список `ZOSCHEDULE_BOT_TRUSTED_USERS` в `.env` (или `trusted_users` в
 `config.toml`; `.env` приоритетнее). После правки `./install.sh restart`.
 
+**Белый список групп:** `ZOSCHEDULE_BOT_TRUSTED_CHATS=-1001234567890,-1009876543210` в
+`.env` (или `trusted_chats` в `config.toml`). Из этих групп бот не выходит, даже если его
+добавил посторонний. Id нужной группы пишется в журнале, когда бот из неё выходит.
+
 **Время постов:** `today_at` и `week_at` в `config.toml`, по Москве. Чтобы день
 приходил накануне, включите `day_ahead = true`: завтрашний день уйдёт, как только
 закончится последняя пара сегодняшнего (в день без пар в `today_at`).

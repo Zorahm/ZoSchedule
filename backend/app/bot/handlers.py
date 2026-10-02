@@ -5,7 +5,8 @@ has no use for ordinary messages.
 
 Only the people in `bot.trusted_users` command the bot. Everyone else is ignored
 without a word (an answer would only tell a stranger that the bot is alive), and a
-group that a stranger adds the bot to is left at once.
+group that a stranger adds the bot to is left at once, unless the group is listed in
+`bot.trusted_chats`.
 """
 
 from __future__ import annotations
@@ -102,7 +103,8 @@ async def tidy_pin_notice(message: Message, bot: Bot) -> None:
 async def leave_a_group_a_stranger_added_me_to(
     event: ChatMemberUpdated, bot: Bot, service: BotService
 ) -> None:
-    """The bot is added to a group: stay if a trusted person did it, otherwise leave.
+    """The bot is added to a group: stay if the group is whitelisted or a trusted person
+    did it, otherwise leave.
 
     Only a fresh join counts; a promotion to administrator or a change of rights in
     a group the bot already belongs to is not "being added".
@@ -111,10 +113,13 @@ async def leave_a_group_a_stranger_added_me_to(
         return
     was_out = event.old_chat_member.status in (ChatMemberStatus.LEFT, ChatMemberStatus.KICKED)
     is_in = event.new_chat_member.status in (ChatMemberStatus.MEMBER, ChatMemberStatus.ADMINISTRATOR)
-    if not (was_out and is_in) or event.from_user.id in service.trusted_users:
+    if not (was_out and is_in):
+        return
+    if event.chat.id in service.trusted_chats or event.from_user.id in service.trusted_users:
         return
     logger.warning(
-        "Пользователь %s (не из trusted_users) добавил бота в группу %s: выхожу",
+        "Пользователь %s (не из trusted_users) добавил бота в группу %s, её нет в "
+        "trusted_chats: выхожу",
         event.from_user.id,
         event.chat.id,
     )

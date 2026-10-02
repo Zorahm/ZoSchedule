@@ -76,6 +76,10 @@ class BotService:
         return frozenset(self._config.bot.trusted_users)
 
     @property
+    def trusted_chats(self) -> frozenset[int]:
+        return frozenset(self._config.bot.trusted_chats)
+
+    @property
     def db_path(self) -> Path:
         return self._config.db_path
 
