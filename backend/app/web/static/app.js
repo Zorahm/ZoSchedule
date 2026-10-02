@@ -203,12 +203,12 @@
     Zo.sheets.send({
       title: Zo.weekday(day.date) + ', ' + Zo.dayLabel(day.date),
       students: students().length, pairs: day.pairs.length, left: all.total - all.marked,
-    }, async function () {
+    }, async function (options) {
       // Картинку рисует бот по базе, поэтому всё набранное должно успеть до неё долететь.
       clearTimeout(S.flushTimer);
       await flush();
       if (S.queue.size) throw new Error('Нет связи: последние отметки ещё не сохранены');
-      await Zo.api.sendReport(day.date);
+      await Zo.api.sendReport(day.date, options);
     });
   }
 

@@ -14,6 +14,8 @@
 
   function show(children) {
     close();
+    var stale = document.querySelector('.toast');
+    if (stale) stale.remove();
     var scrim = h('div', { class: 'scrim', onclick: close });
     var drawer = h('div', { class: 'drawer', role: 'dialog', 'aria-modal': 'true' }, h('div', { class: 'grab' }), children);
     open = h('div', null, scrim, drawer);
@@ -67,11 +69,16 @@
   function sendSheet(info, onSend) {
     var error = h('div', { class: 'err', role: 'alert' });
     var go = h('button', { class: 'btn wide', onclick: submit }, Zo.icon('send'), 'Прислать картинку');
+    var titles = true;
+    var toggle = h('button', { class: 'switch', role: 'switch', 'aria-checked': 'true', onclick: function () {
+      titles = !titles; toggle.setAttribute('aria-checked', String(titles)); } },
+      h('span', { class: 'sw' }, h('i')), h('span', { class: 'sw-t' }, 'Названия пар на картинке', h('small', null, 'Куратору они нужны не всегда')));
     var drawer = show([
       h('div', null, h('div', { class: 'kicker mono' }, 'Для куратора'), h('h2', null, info.title)),
       h('p', { class: 'lead' }, 'Бот пришлёт вам в чат картинку со всей таблицей: ' + info.students + ' ' +
         Zo.plural(info.students, 'студент', 'студента', 'студентов') + ', ' + info.pairs + ' ' + Zo.plural(info.pairs, 'пара', 'пары', 'пар') +
-        ', с названиями пар. Перешлите её куратору.'),
+        '. Перешлите её куратору.'),
+      toggle,
       info.left ? h('div', { class: 'warn' }, 'Не отмечено ' + info.left + ' ' + Zo.plural(info.left, 'ячейка', 'ячейки', 'ячеек') +
         ': на картинке они будут пустыми. Лучше сначала доотметить.') : null,
       error, go,
@@ -81,7 +88,7 @@
     async function submit() {
       go.disabled = true; go.lastChild.textContent = 'Отправляю…'; error.textContent = '';
       try {
-        await onSend();
+        await onSend({ titles: titles });
       } catch (e) {
         error.textContent = e.message || 'Не удалось отправить';
         go.disabled = false; go.lastChild.textContent = 'Прислать картинку';

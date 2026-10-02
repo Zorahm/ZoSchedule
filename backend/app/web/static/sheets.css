@@ -84,3 +84,11 @@
 .done { display: flex; flex-direction: column; gap: 10px; padding-top: 6px; }
 .done .ok { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--present-bg); color: var(--present-ink); }
 .done .ok svg { width: 22px; height: 22px; }
+
+.switch { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; width: 100%; }
+.switch .sw { flex: none; width: 46px; height: 28px; border-radius: 14px; background: var(--line-strong); padding: 3px; transition: background-color .15s ease; }
+.switch .sw i { display: block; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); transition: transform .15s ease; }
+.switch[aria-checked="true"] .sw { background: var(--present-solid); }
+.switch[aria-checked="true"] .sw i { transform: translateX(18px); background: var(--present-solid-ink); }
+.switch .sw-t { display: flex; flex-direction: column; gap: 2px; font-weight: 600; font-size: 15px; }
+.switch small { font-weight: 400; font-size: 13px; color: var(--muted); }

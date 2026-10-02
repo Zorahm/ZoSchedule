@@ -44,7 +44,7 @@
       return call('GET', '/api/journal?' + q.toString());
     },
     marks: function (day, changes) { return call('POST', '/api/marks', { date: day, changes: changes }); },
-    sendReport: function (day) { return call('POST', '/api/report', { date: day }); },
+    sendReport: function (day, options) { return call('POST', '/api/report', { date: day, titles: !options || options.titles !== false }); },
     roster: function () { return call('GET', '/api/roster'); },
     saveRoster: function (students) { return call('PUT', '/api/roster', { students: students }); },
   };

@@ -15,7 +15,7 @@
 @font-face{font-family:'Unbounded';font-weight:200 900;src:url(../../bot/assets/fonts/Unbounded-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F,U+2212}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#f4efe6;font-family:Onest,system-ui,sans-serif;color:#1a1611}
-.frame{width:1080px;padding:64px;display:flex;flex-direction:column;gap:36px;background:#f4efe6}
+.frame{width:1080px;padding:56px 64px;display:flex;flex-direction:column;gap:32px;background:#f4efe6}
 .mono{font-family:'JetBrains Mono',ui-monospace,monospace}
 .top{display:flex;align-items:center;justify-content:space-between}
 .eyebrow{font-size:22px;line-height:28px;font-weight:600;letter-spacing:.08em;color:#5c5347}
@@ -26,19 +26,19 @@ h1{font-family:Unbounded,'Arial Black',sans-serif;font-size:96px;line-height:100
 .sub b{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:400;color:#1a1611}
 table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;background:#fbf8f2;border:1px solid #d9cfbf;border-radius:10px;overflow:hidden}
 th,td{padding:0;text-align:center;font-weight:inherit}
-col.n{width:62px}col.who{width:410px}
-thead th{vertical-align:bottom;padding:18px 4px 14px;border-bottom:2px solid #1a1611;background:#fbf8f2}
-thead .t{font:700 30px/34px 'JetBrains Mono',monospace}
+col.n{width:52px}col.who{width:372px}
+thead th{vertical-align:bottom;padding:16px 6px 14px;border-bottom:2px solid #1a1611;background:#fbf8f2}
+thead .t{font:700 28px/32px 'JetBrains Mono',monospace}
 thead .p{margin-top:2px;font:600 16px/22px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#5c5347;display:flex;align-items:center;justify-content:center;gap:8px}
 .dot{flex:none;width:12px;height:12px;border-radius:50%;background:var(--dot)}
 .k-blue{--dot:#3b6fd1}.k-green{--dot:#3f9a4c}.k-red{--dot:#e0442a}.k-gray{--dot:#a69a88}
-thead .num,thead .name{text-align:left;vertical-align:bottom;font:600 18px/22px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#5c5347}
-thead .num{padding-left:22px}
-tbody td,tbody th{height:50px;border-bottom:1px solid #e6ddce}
+thead .num,thead .name{text-align:left;vertical-align:bottom;padding-bottom:14px;font:600 18px/22px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#5c5347}
+thead .num{padding-left:18px}
+tbody td,tbody th{height:44px;border-bottom:1px solid #e6ddce}
 tbody tr:nth-child(even) td,tbody tr:nth-child(even) th{background:#f7f2e9}
-tbody .num{font:500 18px/1 'JetBrains Mono',monospace;color:#8a7f70;text-align:left;padding-left:22px}
-tbody .name{text-align:left;font-size:25px;line-height:30px;font-weight:500;white-space:nowrap;padding-right:6px}
-.m{display:inline-grid;place-items:center;width:38px;height:38px;border-radius:9px;font:700 22px/1 'JetBrains Mono',monospace;vertical-align:middle}
+tbody .num{font:500 17px/1 'JetBrains Mono',monospace;color:#8a7f70;text-align:left;padding-left:18px}
+tbody .name{text-align:left;font-size:24px;line-height:28px;font-weight:500;white-space:nowrap;padding-right:6px}
+.m{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:8px;font:700 20px/1 'JetBrains Mono',monospace;vertical-align:middle}
 .m.p{background:#d8ecd5;color:#21502a;border:1.5px solid #a9d2a5}
 .m.n{background:#e0442a;color:#fff}
 .m.e{border:1.5px dashed #b6ab99;color:#b6ab99;font-weight:500}
@@ -66,6 +66,9 @@ tfoot small{display:block;margin-top:3px;font:500 15px/18px 'JetBrains Mono',mon
 
 .pl .me{grid-column:3;font-size:20px;line-height:26px;color:#5c5347}
 .pl .me.unknown{font-style:italic}
+.names{display:flex;flex-wrap:wrap;gap:12px 14px}
+.nm{display:flex;align-items:center;gap:12px;padding:8px 18px 8px 8px;background:#fbf8f2;border:1px solid #d9cfbf;border-radius:999px;font-size:25px;line-height:30px;font-weight:600}
+.nm b{display:grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:999px;background:#1a1611;color:#f4efe6;font:700 19px/1 'JetBrains Mono',monospace}
 </style>
 </head>
 <body>
@@ -73,21 +76,24 @@ tfoot small{display:block;margin-top:3px;font:500 15px/18px 'JetBrains Mono',mon
 <script>
 (function () {
   var partial = location.search.indexOf('partial') >= 0;
+  var titles = location.search.indexOf('titles=0') < 0;
   var NAMES = ['Абрамов Илья Сергеевич', 'Баранова Алина Игоревна', 'Васильев Артём Олегович', 'Громова Дарья Андреевна', 'Дроздов Кирилл Павлович',
     'Егорова Полина Артёмовна', 'Жуков Максим Денисович', 'Зайцева Мария Ильинична', 'Иванов Никита Алексеевич', 'Исаева Ксения Романовна',
     'Козлов Егор Викторович', 'Лебедева София Дмитриевна', 'Макаров Тимур Русланович', 'Новикова Анастасия Павловна', 'Орлов Матвей Степанович',
     'Панина Вероника Сергеевна', 'Романов Данила Евгеньевич', 'Сидоров Артур Николаевич', 'Тихонова Елизавета Максимовна', 'Устинов Глеб Аркадьевич',
-    'Фомина Алиса Валерьевна', 'Харитонов Лев Борисович', 'Шевцова Дарина Олеговна', 'Яковлев Руслан Маратович'];
+    'Фомина Алиса Валерьевна', 'Харитонов Лев Борисович', 'Шевцова Дарина Олеговна', 'Яковлев Руслан Маратович',
+    'Белова Виктория Станиславовна', 'Горшков Семён Андреевич', 'Ефимова Анна Кирилловна', 'Крылов Артём Вадимович', 'Мельникова Ульяна Антоновна', 'Тарасов Игорь Леонидович']
+    .sort(function (a, b) { return a.localeCompare(b, 'ru'); });
   var PAIRS = [
-    { start: '08:30', end: '10:00', title: 'Математический анализ', tone: 'blue', teacher: 'Орлов П. П.', room: '210' },
-    { start: '10:10', end: '11:40', title: 'Веб-программирование', tone: 'green', teacher: 'Петров А. А.', room: '305' },
-    { start: '12:10', end: '13:40', title: 'Операционные системы', tone: 'blue', teacher: null, room: '305' },
-    { start: '13:50', end: '15:20', title: 'Иностранный язык в профессиональной деятельности', tone: 'green', teacher: 'Сидорова Н. В.', room: '402' },
+    { start: '08:30', end: '10:00', title: 'Математический анализ', tone: 'blue' },
+    { start: '10:10', end: '11:40', title: 'Веб-программирование', tone: 'green' },
+    { start: '12:10', end: '13:40', title: 'Операционные системы', tone: 'blue' },
+    { start: '13:50', end: '15:20', title: 'Иностранный язык', tone: 'green' },
   ];
   function mark(si, pi) {
     if (si === 2) return 'n';                                  // не было весь день
-    if ((si * 7 + pi * 13) % 23 === 3 || (si === 16 && pi >= 2)) return 'n';
-    if (partial && si >= 19 && pi >= 2) return 'e';            // староста отправил недозаполненное
+    if ((si * 7 + pi * 13) % 23 === 3 || (si === 20 && pi >= 2)) return 'n';
+    if (partial && si >= 25 && pi >= 2) return 'e';            // староста отправил недозаполненное
     return 'p';
   }
   var h = function (tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -96,17 +102,16 @@ tfoot small{display:block;margin-top:3px;font:500 15px/18px 'JetBrains Mono',mon
   var eb = h('div', 'eyebrow mono'); eb.append('ОККИПд-307 · ', h('em', null, 'посещаемость'));
   top.append(eb, h('div', 'pill', 'Для куратора'));
   var head = h('div'); head.append(h('h1', null, 'Пятница'));
-  var sub = h('div', 'sub'); sub.append('2 октября 2026 · '); sub.append(h('b', null, NAMES.length + ' студента, ' + PAIRS.length + ' пары'));
+  var sub = h('div', 'sub'); sub.append('2 октября 2026 · '); sub.append(h('b', null, NAMES.length + ' студентов, ' + PAIRS.length + ' пары'));
   head.append(sub);
 
-  var plan = h('div', 'plan');
-  PAIRS.forEach(function (p, i) {
-    var row = h('div', 'pl k-' + p.tone), tm = h('div', 'tm', p.start), ti = h('div', 'ti');
-    tm.append(h('small', null, '–' + p.end)); ti.append(p.title);
-    row.append(h('div', 'no', i + 1), tm, ti);
-    row.append(h('div', 'me' + (p.teacher ? '' : ' unknown'), (p.teacher || 'преподаватель не указан на сайте') + (p.room ? ' · ауд. ' + p.room : '')));
-    plan.append(row);
-  });
+  var names = null;
+  if (titles) {
+    names = h('div', 'names');
+    PAIRS.forEach(function (p, i) {
+      var chip = h('div', 'nm k-' + p.tone); chip.append(h('b', null, i + 1), p.title); names.append(chip);
+    });
+  }
 
   var table = h('table');
   var colgroup = h('colgroup'); colgroup.append(h('col', 'n'), h('col', 'who'));
@@ -115,7 +120,8 @@ tfoot small{display:block;margin-top:3px;font:500 15px/18px 'JetBrains Mono',mon
   tr.append(h('th', 'num', '№'), h('th', 'name', 'ФИО'));
   PAIRS.forEach(function (p, i) {
     var th = h('th'); var t = h('div', 't', p.start);
-    th.append(t, h('div', 'p', (i + 1) + ' пара')); tr.append(th);
+    th.append(t, h('div', 'p', (i + 1) + ' пара'));
+    tr.append(th);
   });
   thead.append(tr);
   var tbody = h('tbody'), absent = PAIRS.map(function () { return 0; }), empty = PAIRS.map(function () { return 0; });
@@ -146,7 +152,7 @@ tfoot small{display:block;margin-top:3px;font:500 15px/18px 'JetBrains Mono',mon
 
   var foot = h('div', 'foot'); var logo = h('div', 'logo'); logo.append('Zo', h('span', null, '/'), 'Schedule');
   foot.append(logo, h('div', 'upd', 'Отправлено 2 окт., 15:42'));
-  document.getElementById('frame').append(top, head, plan, table, legend, foot);
+  document.getElementById('frame').append.apply(document.getElementById('frame'), [top, head, names, table, legend, foot].filter(Boolean));
 })();
 </script>
 </body>
