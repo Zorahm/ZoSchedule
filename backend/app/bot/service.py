@@ -167,7 +167,7 @@ class BotService:
         absent = sum(1 for student in day.students for mark in student.marks.values() if mark == "absent")
         caption = (
             f"Посещаемость {html.escape(group)}, {texts.date_long(day.date)}. "
-            f"Отсутствий (Н): {absent}. Перешлите файл куратору."
+            f"Отсутствий (Н): {absent}."
         )
         try:
             await self._bot.send_document(

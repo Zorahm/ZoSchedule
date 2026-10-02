@@ -96,12 +96,12 @@
       }
       Zo.haptic('success');
       var tg = window.Telegram && window.Telegram.WebApp;
-      drawer.replaceChildren.apply(drawer, [h('div', { class: 'grab' }),
+      Zo.fill(drawer, [h('div', { class: 'grab' }),
         h('div', { class: 'done' }, h('span', { class: 'ok' }, Zo.icon('check')),
           h('h2', null, 'Картинка отправлена'),
           h('p', { class: 'lead' }, 'Она в вашем чате с ботом. Откройте её и перешлите куратору.')),
         tg && tg.close ? h('button', { class: 'btn wide', onclick: function () { tg.close(); } }, 'Перейти в чат') : null,
-        h('button', { class: 'btn ghost wide', onclick: close }, 'Остаться в журнале')].filter(Boolean));
+        h('button', { class: 'btn ghost wide', onclick: close }, 'Остаться в журнале')]);
     }
   }
 

@@ -107,7 +107,7 @@ async def test_the_table_goes_to_the_headman_as_a_file_not_a_photo(
 
     assert telegram.documents == [(str(HEADMAN), "attendance-2026-10-02.png")]
     [caption] = telegram.captions
-    assert "ОККИПд-307" in caption and "Н): 1" in caption and "куратору" in caption
+    assert caption == "Посещаемость ОККИПд-307, 2 октября. Отсутствий (Н): 1."  # без «перешлите куратору»
     assert "photo" not in telegram.kinds()
 
 
