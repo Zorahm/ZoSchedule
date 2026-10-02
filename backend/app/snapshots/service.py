@@ -6,6 +6,7 @@ import asyncio
 import datetime as dt
 import logging
 from dataclasses import dataclass
+from typing import Literal
 
 from app import moscow
 from app.config import AppConfig
@@ -13,7 +14,8 @@ from app.models.changes import ChangeDraft
 from app.models.db import connect, init_db
 from app.models.domain import Lesson, SnapshotMeta, SnapshotSource
 from app.parsing.adapter import ParserFailure, run as run_parser
-from app.snapshots import diff, store
+from app.parsing.curator import RoomNotice
+from app.snapshots import diff, overrides, store
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,15 @@ class RefreshOutcome:
     ok: bool
     changes_detected: int
     error: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class RoomCorrection:
+    """Чем кончилась правка аудитории по сообщению куратора."""
+
+    status: Literal["applied", "unchanged", "no_lesson", "ambiguous", "no_schedule"]
+    day: dt.date | None = None
+    changes_detected: int = 0
 
 
 class ScheduleService:
@@ -75,6 +86,59 @@ class ScheduleService:
         )
         return len(drafts)
 
+    async def correct_room(
+        self, notice: RoomNotice, *, author_id: int | None, chat_id: str | None, text: str
+    ) -> RoomCorrection:
+        """Ставит аудиторию из сообщения куратора на ближайшую пару этого времени.
+
+        Правка запоминается и накладывается на каждый следующий снимок сайта. Сразу
+        сохраняется и новый снимок с ней: дифф с предыдущим даст событие `moved` с
+        прежней и новой аудиторией, по нему бот напишет об изменении в чат.
+        """
+        async with self._lock:
+            now = moscow.now()
+            with connect(self._config.db_path) as conn:
+                latest = store.latest_ok(conn)
+                if latest is None:
+                    return RoomCorrection("no_schedule")
+                current = store.load_lessons(conn, latest.id)
+
+            located = overrides.locate(
+                current, start=notice.start_label, now=now, day_hint=notice.day_hint
+            )
+            if located is None:
+                return RoomCorrection("no_lesson")
+            day, lessons = located
+            if len(lessons) > 1:
+                # Две пары в одном слоте: какую менять, из сообщения не понять.
+                return RoomCorrection("ambiguous", day)
+            if lessons[0].room == notice.room:
+                return RoomCorrection("unchanged", day)
+
+            override = overrides.RoomOverride(day=day, start=notice.start_label, room=notice.room)
+            with connect(self._config.db_path) as conn:
+                store.save_room_override(
+                    conn,
+                    override=override,
+                    set_at=now,
+                    set_by=author_id,
+                    chat_id=chat_id,
+                    message_text=text,
+                )
+            # Тот же источник, что у правимого снимка: дифф считается внутри источника.
+            _, drafts = self._store_snapshot(
+                taken_at=now, raw=None, lessons=current, source=latest.source
+            )
+            logger.info(
+                "Куратор %s: %s %s, аудитория %s, изменений: %d",
+                author_id,
+                day,
+                notice.start_label,
+                notice.room,
+                len(drafts),
+            )
+            return RoomCorrection("applied", day, len(drafts))
+
     def _store_snapshot(
         self,
         *,
@@ -91,6 +155,8 @@ class ScheduleService:
         with connect(self._config.db_path) as conn:
             conn.execute("BEGIN")
             try:
+                # Правки куратора переживают прогон парсера: сайт о них не знает.
+                lessons = overrides.apply_room_overrides(lessons, store.room_overrides(conn))
                 previous = store.latest_ok(conn, source=source)
                 snapshot = store.save_snapshot(
                     conn, taken_at=taken_at, raw=raw, lessons=lessons, source=source

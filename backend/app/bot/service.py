@@ -35,8 +35,9 @@ from app.bot.view import WEEK_DAYS
 from app.config import AppConfig
 from app.models.changes import ChangeEvent
 from app.models.db import connect
+from app.parsing.curator import RoomNotice
 from app.snapshots import store
-from app.snapshots.service import RefreshOutcome
+from app.snapshots.service import RefreshOutcome, RoomCorrection
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,14 @@ class Refresher(Protocol):
     async def refresh(self) -> RefreshOutcome: ...
 
 
+class RoomCorrector(Protocol):
+    """What the bot needs to apply a curator's message: put a room on the nearest lesson."""
+
+    async def correct_room(
+        self, notice: RoomNotice, *, author_id: int | None, chat_id: str | None, text: str
+    ) -> RoomCorrection: ...
+
+
 class BotService:
     def __init__(
         self,
@@ -58,10 +67,12 @@ class BotService:
         bot: Bot,
         renderer: Renderer,
         schedule: Refresher | None = None,
+        corrector: RoomCorrector | None = None,
     ) -> None:
         self._config = config
         self._bot = bot
         self._schedule = schedule
+        self._corrector = corrector
         self._refreshed: set[str] = set()
         self._pictures = PictureBuilder(config, renderer)
         self._retry_at: dict[str, dt.datetime] = {}
@@ -73,6 +84,11 @@ class BotService:
     @property
     def trusted_users(self) -> frozenset[int]:
         return frozenset(self._config.bot.trusted_users)
+
+    @property
+    def curators(self) -> frozenset[int]:
+        """Who may correct the schedule from a chat: the curators and the bot's owners."""
+        return frozenset(self._config.bot.curators) | self.trusted_users
 
     @property
     def trusted_chats(self) -> frozenset[int]:
@@ -119,6 +135,44 @@ class BotService:
             disable_notification=self._config.bot.silent,
         )
         return sent.message_id
+
+    # -- curator's corrections ------------------------------------------------
+
+    def works_in(self, chat_id: str) -> bool:
+        return any(target.chat == chat_id for target in self.load_targets())
+
+    async def correct_room(
+        self, notice: RoomNotice, *, author_id: int | None, chat_id: str, text: str
+    ) -> str | None:
+        """Applies a curator's room notice and tells every chat at once.
+
+        Returns a reply for the curator when the notice could not be applied, else None.
+        A notice about other groups is not ours and gets no answer.
+        """
+        group = self._config.group.name
+        if self._corrector is None or not notice.mentions(group):
+            return None
+        result = await self._corrector.correct_room(
+            notice, author_id=author_id, chat_id=chat_id, text=text
+        )
+        if result.status == "applied":
+            await self._tell_chats_now()
+            return None
+        if result.status == "no_lesson":
+            return f"Не нашёл пару в {notice.start_label} у {group} на ближайшие дни, расписание не менял."
+        if result.status == "ambiguous":
+            return f"В {notice.start_label} две пары: не понял, какую менять. Расписание не менял."
+        return None  # unchanged: already as the curator says; no_schedule: nothing to correct
+
+    async def _tell_chats_now(self) -> None:
+        """The change text and the redrawn pictures, now rather than at the next tick."""
+        try:
+            await self.announce_changes()
+            await self.sync_pictures()
+        except errors.TELEGRAM_ERRORS as error:
+            # The correction is saved and the feed position of a failed chat did not move:
+            # the next tick delivers what is missing.
+            logger.warning("Правка куратора сохранена, но чаты оповестить не удалось: %s", error)
 
     # -- snapshots ------------------------------------------------------------
 

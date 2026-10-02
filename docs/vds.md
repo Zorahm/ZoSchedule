@@ -220,6 +220,12 @@ mv backend/zoschedule.db backend/zoschedule-старая.db
 **Доверенные:** список `ZOSCHEDULE_BOT_TRUSTED_USERS` в `.env` (или `trusted_users` в
 `config.toml`; `.env` приоритетнее). После правки `./install.sh restart`.
 
+**Правки куратора:** `ZOSCHEDULE_BOT_CURATORS=123456789,987654321` в `.env` (или `curators`
+в `config.toml`). Сообщение «в 13.50 у ОККИПд-307 пара будет в 314 аудитории» от них (и от
+доверенных) бот применяет к расписанию. В @BotFather выключите Group Privacy (`/setprivacy` →
+Disable) и добавьте бота в группы заново, иначе обычных сообщений он не увидит (при
+запуске в журнале будет предупреждение).
+
 **Белый список групп:** `ZOSCHEDULE_BOT_TRUSTED_CHATS=-1001234567890,-1009876543210` в
 `.env` (или `trusted_chats` в `config.toml`). Из этих групп бот не выходит, даже если его
 добавил посторонний. Id нужной группы пишется в журнале, когда бот из неё выходит.

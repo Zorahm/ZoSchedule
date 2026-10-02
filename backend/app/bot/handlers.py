@@ -1,7 +1,8 @@
 """Chat commands and housekeeping. /go: "start working in this chat"; /stop: "stop".
 
-Group privacy stays on: Telegram delivers commands to such a bot, and the bot
-has no use for ordinary messages.
+Besides the commands the bot reads one kind of ordinary message: a curator's notice
+that a lesson is in another room. Telegram hides ordinary messages from a bot with
+Group Privacy on, so it has to be off (or the bot an administrator).
 
 The bot can work in several groups at once, each added by its own /go.
 
@@ -24,6 +25,7 @@ from aiogram.types import ChatMemberUpdated, Message
 
 from app.bot import errors
 from app.bot.service import BotService
+from app.parsing.curator import parse_room_notice
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +81,31 @@ async def stop(message: Message, service: BotService) -> None:
         await message.answer("Больше не пишу в этот чат. Вернуть: /go.", disable_notification=True)
     else:
         await message.answer("Сюда я и не пишу. Начать: /go.", disable_notification=True)
+
+
+async def curator_notice(message: Message, service: BotService) -> None:
+    """A curator's "в 13.50 у ОККИПд-307 пара будет в 314 аудитории": change the room.
+
+    Only people from `curators` / `trusted_users`, only in a group the bot works in.
+    Everything else in the chat is none of the bot's business and gets no answer.
+    """
+    notice = parse_room_notice(message.text or "")
+    if notice is None or not service.works_in(str(message.chat.id)):
+        return
+    user = message.from_user
+    if user is None or user.id not in service.curators:
+        # The log is where the owner finds the id to put into curators.
+        logger.warning(
+            "Игнорирую сообщение о смене аудитории от пользователя %s (%s): его нет в curators",
+            user.id if user else "?",
+            f"@{user.username}" if user and user.username else "без ника",
+        )
+        return
+    reply = await service.correct_room(
+        notice, author_id=user.id, chat_id=str(message.chat.id), text=message.text or ""
+    )
+    if reply is not None:
+        await message.reply(reply, disable_notification=True)
 
 
 async def _delete_notice(message: Message) -> None:
@@ -159,4 +186,6 @@ def build_router() -> Router:
     # this one takes the bot's departure, the next one its arrival.
     router.my_chat_member.register(forget_a_group_the_bot_left, _IN_GROUP, _BOT_IS_OUT)
     router.my_chat_member.register(leave_a_group_a_stranger_added_me_to)
+    # Last: a command or a service message must never reach the notice parser.
+    router.message.register(curator_notice, _IN_GROUP, F.text)
     return router

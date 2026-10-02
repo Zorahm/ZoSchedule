@@ -49,8 +49,9 @@ async def open_service(
     one lock; standalone the bot brings its own and polls the site itself."""
     bot = make_bot(config.bot.token.get_secret_value(), proxy=config.bot.proxy_url)
     try:
+        schedule = schedule or ScheduleService(config)
         yield BotService(
-            config, bot, PlaywrightRenderer(config.bot.browser_path), schedule or ScheduleService(config)
+            config, bot, PlaywrightRenderer(config.bot.browser_path), schedule, schedule
         )
     finally:
         await bot.session.close()
@@ -60,6 +61,14 @@ async def _on_startup(bot: Bot) -> None:
     # Cosmetic, and Telegram may be unreachable right now: the bot must still start.
     try:
         me = await bot.me()
+        if not me.can_read_all_group_messages:
+            # Group Privacy hides ordinary messages from the bot: the curator's notice
+            # would never arrive. Commands still work, so this is only a warning.
+            logger.warning(
+                "У бота включён Group Privacy: сообщения куратора в группах не дойдут. "
+                "Отключите в @BotFather (/setprivacy → Disable) и добавьте бота в группы заново "
+                "или сделайте его администратором"
+            )
         await bot.set_my_commands(
             [
                 BotCommand(command="go", description="Запустить бота в этом чате"),

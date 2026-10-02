@@ -39,6 +39,11 @@ TRUSTED_HINT = (
 )
 
 
+CURATORS_HINT = (
+    "curators: ожидается список положительных Telegram-id людей, "
+    "в .env — через запятую: ZOSCHEDULE_BOT_CURATORS=123456789,987654321"
+)
+
 TRUSTED_CHATS_HINT = (
     "trusted_chats: ожидается список отрицательных Telegram-id групп, "
     "в .env — через запятую: ZOSCHEDULE_BOT_TRUSTED_CHATS=-1001234567890,-1009876543210"
@@ -74,6 +79,11 @@ class BotConfig(BaseModel):
     """Telegram ids of the people who may run the bot (`/go`) and add it to a group.
 
     Everyone else is ignored, and a group they add the bot to is left at once."""
+    curators: list[int] = []
+    """Telegram ids of the people whose messages in a working group change the schedule
+    ("в 13.50 у ОККИПд-307 пара будет в 314 аудитории"). `trusted_users` count too.
+
+    Nobody else's message is read as a correction, however much it looks like one."""
     trusted_chats: list[int] = []
     """Telegram ids of the groups (negative numbers) the bot never leaves.
 
@@ -107,6 +117,23 @@ class BotConfig(BaseModel):
     def _trusted_users_are_people(cls, value: list[int]) -> list[int]:
         if any(user_id <= 0 for user_id in value):
             raise ValueError(TRUSTED_HINT)  # a negative id is a group, not a person
+        return sorted(set(value))
+
+    @field_validator("curators", mode="before")
+    @classmethod
+    def _curators_from_a_list_or_a_comma_string(cls, value: object) -> object:
+        if isinstance(value, str):
+            try:
+                return [int(part) for part in value.replace(";", ",").split(",") if part.strip()]
+            except ValueError:
+                raise ValueError(CURATORS_HINT) from None
+        return value
+
+    @field_validator("curators")
+    @classmethod
+    def _curators_are_people(cls, value: list[int]) -> list[int]:
+        if any(user_id <= 0 for user_id in value):
+            raise ValueError(CURATORS_HINT)
         return sorted(set(value))
 
     @field_validator("trusted_chats", mode="before")
@@ -218,6 +245,7 @@ def load_config(path: Path | None = None) -> AppConfig:
         ("ZOSCHEDULE_BOT_PROXY", "proxy"),
         ("ZOSCHEDULE_BOT_TRUSTED_USERS", "trusted_users"),
         ("ZOSCHEDULE_BOT_TRUSTED_CHATS", "trusted_chats"),
+        ("ZOSCHEDULE_BOT_CURATORS", "curators"),
     ):
         value = os.environ.get(env_name)
         if value:

@@ -95,6 +95,21 @@ CREATE TABLE IF NOT EXISTS bot_state (
     value TEXT NOT NULL
 );
 
+-- Правки куратора: аудитория пары, названная в чате. Накладывается на пары каждого
+-- нового снимка сайта, иначе следующий прогон парсера откатил бы её. По строке на
+-- пару (день + начало), новая правка той же пары заменяет прежнюю. Текст сообщения
+-- и автор хранятся, чтобы было видно, откуда взялась аудитория.
+CREATE TABLE IF NOT EXISTS room_overrides (
+    date         TEXT    NOT NULL,
+    starts       TEXT    NOT NULL,
+    room         TEXT    NOT NULL,
+    set_at       TEXT    NOT NULL,
+    set_by       INTEGER,
+    chat_id      TEXT,
+    message_text TEXT    NOT NULL,
+    PRIMARY KEY (date, starts)
+);
+
 -- Чаты, куда бот пишет: по строке на каждую группу, где доверенный написал /go.
 -- Порядок вставки — порядок рассылки. `last_event_id` у каждого чата свой: сбой
 -- Telegram в одной группе не должен ни терять изменения для неё, ни слать их
