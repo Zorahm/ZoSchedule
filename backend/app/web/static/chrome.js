@@ -38,7 +38,7 @@
       nodes.push(h('span', null, 'Дальше ' + when(data.next_opens_at)));
     }
     if (day.date !== data.current_day) {
-      nodes.push(h('button', { class: 'back', onclick: onBack }, 'К ' + Zo.weekdayIn(data.current_day)));
+      nodes.push(h('button', { class: 'back', onclick: onBack }, 'К ' + Zo.weekdayTo(data.current_day)));
     }
     return nodes;
   }

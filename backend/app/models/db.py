@@ -121,6 +121,31 @@ CREATE TABLE IF NOT EXISTS bot_targets (
     last_event_id INTEGER
 );
 
+-- Список группы для журнала посещаемости. Убранный из списка не удаляется, а
+-- гасится (`active = 0`): за ним остаются отметки прошлых дней, а вернувшийся с
+-- тем же ФИО оживает под прежним id.
+CREATE TABLE IF NOT EXISTS roster (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    full_name TEXT    NOT NULL,
+    active    INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+    added_at  TEXT    NOT NULL
+);
+
+-- Отметки старосты. Пара опознаётся днём и временем начала, как правка аудитории:
+-- номер пары сдвигается, когда в расписание вставляют занятие, а время остаётся.
+-- Нет строки — не отмечено; снять отметку значит удалить строку.
+CREATE TABLE IF NOT EXISTS attendance (
+    date       TEXT    NOT NULL,
+    starts     TEXT    NOT NULL,
+    student_id INTEGER NOT NULL REFERENCES roster (id),
+    mark       TEXT    NOT NULL CHECK (mark IN ('present', 'absent')),
+    marked_at  TEXT    NOT NULL,
+    marked_by  INTEGER,
+    PRIMARY KEY (date, starts, student_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance (date);
+
 """
 
 

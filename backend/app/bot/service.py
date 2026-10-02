@@ -16,20 +16,23 @@ for all; a failure in one chat never holds up the others):
 from __future__ import annotations
 
 import datetime as dt
+import html
 import logging
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Protocol
 
 from aiogram import Bot
-from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import BufferedInputFile, InputMediaPhoto
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
+from aiogram.types import BufferedInputFile, InputMediaPhoto, MenuButtonWebApp, WebAppInfo
 
 from app import moscow
+from app.attendance.models import JournalDay
+from app.attendance.report import ReportError, file_name, report_html
 from app.bot import store as bot_store
 from app.bot import errors, texts
 from app.bot.pictures import Picture, PictureBuilder, target_monday
-from app.bot.renderer import Renderer
+from app.bot.renderer import RenderError, Renderer
 from app.bot.store import Target
 from app.bot.view import WEEK_DAYS
 from app.config import AppConfig
@@ -74,6 +77,7 @@ class BotService:
         self._schedule = schedule
         self._corrector = corrector
         self._refreshed: set[str] = set()
+        self._renderer = renderer
         self._pictures = PictureBuilder(config, renderer)
         self._retry_at: dict[str, dt.datetime] = {}
 
@@ -89,6 +93,15 @@ class BotService:
     def curators(self) -> frozenset[int]:
         """Who may correct the schedule from a chat: the curators and the bot's owners."""
         return frozenset(self._config.bot.curators) | self.trusted_users
+
+    @property
+    def headmen(self) -> frozenset[int]:
+        """Who may open the attendance journal: the headmen and the bot's owners."""
+        return frozenset(self._config.bot.headmen) | self.trusted_users
+
+    @property
+    def web_url(self) -> str | None:
+        return self._config.web.public_url or None
 
     @property
     def trusted_chats(self) -> frozenset[int]:
@@ -135,6 +148,50 @@ class BotService:
             disable_notification=self._config.bot.silent,
         )
         return sent.message_id
+
+    # -- attendance journal ---------------------------------------------------
+
+    async def send_attendance_report(self, user_id: int, day: JournalDay, *, titles: bool) -> None:
+        """Draws the day's full table and sends it to the headman as a file.
+
+        A file, not a photo: Telegram squeezes a photo to 1280 px on its longer side, and a
+        table of thirty rows becomes unreadable. The headman forwards it to the curator.
+        """
+        group = self._config.group.name
+        page = report_html(group, day, titles=titles, sent_at=moscow.now())
+        try:
+            png = await self._renderer.render(page)
+        except RenderError as error:
+            logger.warning("Не удалось нарисовать таблицу посещаемости: %s", error)
+            raise ReportError("Не удалось нарисовать картинку: на сервере нет браузера для неё.") from error
+        absent = sum(1 for student in day.students for mark in student.marks.values() if mark == "absent")
+        caption = (
+            f"Посещаемость {html.escape(group)}, {texts.date_long(day.date)}. "
+            f"Отсутствий (Н): {absent}. Перешлите файл куратору."
+        )
+        try:
+            await self._bot.send_document(
+                chat_id=user_id, document=BufferedInputFile(png, file_name(day.date)), caption=caption
+            )
+        except TelegramForbiddenError as error:
+            raise ReportError(
+                "Бот не может вам написать. Откройте чат с ботом и нажмите «Старт», потом повторите.", 409
+            ) from error
+        except errors.TELEGRAM_ERRORS as error:
+            logger.warning("Telegram не принял таблицу посещаемости: %s", error)
+            raise ReportError("Telegram не принял файл. Попробуйте ещё раз через минуту.") from error
+
+    async def pin_journal_button(self, user_id: int) -> None:
+        """Makes the journal the menu button of the headman's private chat. Cosmetic: never fails."""
+        if self.web_url is None:
+            return
+        try:
+            await self._bot.set_chat_menu_button(
+                chat_id=user_id,
+                menu_button=MenuButtonWebApp(text="Журнал", web_app=WebAppInfo(url=self.web_url)),
+            )
+        except errors.TELEGRAM_ERRORS as error:
+            logger.warning("Не удалось поставить кнопку журнала для %s: %s", user_id, error)
 
     # -- curator's corrections ------------------------------------------------
 

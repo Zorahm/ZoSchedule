@@ -45,6 +45,7 @@
   var WEEKDAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
   var WEEKDAYS_SHORT = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
   var MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+  var WEEKDAYS_TO = ['воскресенью', 'понедельнику', 'вторнику', 'среде', 'четвергу', 'пятнице', 'субботе'];
   var WEEKDAYS_IN = ['воскресенье', 'понедельник', 'вторник', 'среду', 'четверг', 'пятницу', 'субботу'];
 
   /** "2026-10-02" -> локальная полночь; часовые пояса тут не нужны, это просто календарь. */
@@ -63,6 +64,7 @@
   };
   Zo.weekday = function (iso) { return WEEKDAYS[Zo.parseDay(iso).getDay()]; };
   Zo.weekdayShort = function (iso) { return WEEKDAYS_SHORT[Zo.parseDay(iso).getDay()]; };
+  Zo.weekdayTo = function (iso) { return WEEKDAYS_TO[Zo.parseDay(iso).getDay()]; };
   Zo.weekdayIn = function (iso) { return WEEKDAYS_IN[Zo.parseDay(iso).getDay()]; };
   Zo.dayLabel = function (iso) { var d = Zo.parseDay(iso); return d.getDate() + ' ' + MONTHS[d.getMonth()]; };
   Zo.monday = function (iso) {
