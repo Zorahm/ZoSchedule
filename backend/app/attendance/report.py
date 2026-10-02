@@ -66,7 +66,7 @@ tfoot .s{font:700 30px/1 'JetBrains Mono',monospace}
 tfoot .s.z{color:#8a7f70;font-weight:500}
 tfoot small{display:block;margin-top:3px;font:500 15px/18px 'JetBrains Mono',monospace;color:#8c2313}
 .legend{display:flex;flex-wrap:wrap;align-items:center;gap:14px 28px;font-size:22px;line-height:28px;color:#5c5347}
-.legend span{display:flex;align-items:center;gap:10px}
+.legend>span{display:flex;align-items:center;gap:10px}
 .legend .m{width:30px;height:30px;font-size:18px;border-radius:7px}
 .legend b{margin-left:auto;font:400 24px/28px 'JetBrains Mono',monospace;color:#1a1611}
 .foot{display:flex;align-items:center;justify-content:space-between;padding-top:24px;border-top:1px solid #d9cfbf}

@@ -90,3 +90,11 @@ def test_names_from_the_roster_cannot_inject_markup() -> None:
 
 def test_the_file_name_has_the_date_and_is_plain_ascii() -> None:
     assert file_name(DAY) == "attendance-2026-10-02.png"
+
+
+def test_the_legend_style_does_not_leak_onto_the_sample_squares() -> None:
+    # `.legend span` целился и во вложенный квадратик «П/Н/–», превращал его во flex, и буква
+    # уезжала к левому краю. Правило должно касаться только прямых потомков легенды.
+    page = report_html("г", _day(("Абрамов Илья", {})), titles=False, sent_at=SENT)
+
+    assert ".legend>span{" in page and ".legend span{" not in page
