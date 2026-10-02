@@ -87,7 +87,13 @@ class FakeTelegram:
         """The `disable_notification` flag of every message and photo sent, in order."""
         self.updates: list[list[Update]] = []
         """Batches `getUpdates` hands out, one per call; then it finds nothing."""
-        self._failures: dict[type[TelegramMethod[Any]], tuple[TelegramAPIError, int | None]] = {}
+        self.chats: list[str] = []
+        """The chat of every message and photo sent, in order (parallel to `silent`)."""
+        self.text_chats: list[str] = []
+        """The chat of every text message sent, in order (parallel to `texts`)."""
+        self._failures: dict[
+            type[TelegramMethod[Any]], tuple[TelegramAPIError, int | None, str | None]
+        ] = {}
         self.tried: list[str] = []
         """Every method asked for, failed or not, by class name."""
         self._next = 100
@@ -99,12 +105,15 @@ class FakeTelegram:
         error: TelegramAPIError | None,
         *,
         times: int | None = None,
+        chat: str | None = None,
     ) -> None:
-        """Makes calls of `method` raise `error`: `times` of them, or all (None: works again)."""
+        """Makes calls of `method` raise `error`: `times` of them, or all (None: works again).
+
+        With `chat`, only the calls addressed to that chat fail."""
         if error is None:
             self._failures.pop(method, None)
         else:
-            self._failures[method] = (error, times)
+            self._failures[method] = (error, times, chat)
 
     def kinds(self) -> list[str]:
         return [kind for kind, _ in self.calls]
@@ -117,13 +126,13 @@ class FakeTelegram:
     def answer(self, method: TelegramMethod[Any]) -> object:
         self.tried.append(type(method).__name__)
         failing = self._failures.get(type(method))
-        if failing is not None:
-            error, left = failing
+        if failing is not None and failing[2] in (None, str(getattr(method, "chat_id", None))):
+            error, left, only_chat = failing
             if left is not None:
                 if left <= 1:
                     del self._failures[type(method)]
                 else:
-                    self._failures[type(method)] = (error, left - 1)
+                    self._failures[type(method)] = (error, left - 1, only_chat)
             raise error
 
         if isinstance(method, SendMessage):
@@ -132,6 +141,8 @@ class FakeTelegram:
             self.texts.append(method.text)
             self.threads.append(method.message_thread_id)
             self.silent.append(method.disable_notification)
+            self.chats.append(str(method.chat_id))
+            self.text_chats.append(str(method.chat_id))
             return sent
         if isinstance(method, SendPhoto):
             sent = self._new_message(method.chat_id)
@@ -139,6 +150,7 @@ class FakeTelegram:
             self.captions.append(method.caption or "")
             self.threads.append(method.message_thread_id)
             self.silent.append(method.disable_notification)
+            self.chats.append(str(method.chat_id))
             assert isinstance(method.photo, InputFile)
             return sent
         if isinstance(method, EditMessageMedia):

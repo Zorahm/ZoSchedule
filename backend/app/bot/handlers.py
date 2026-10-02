@@ -1,11 +1,15 @@
-"""Chat commands and housekeeping. The only command is /go: "start working in this chat".
+"""Chat commands and housekeeping. /go: "start working in this chat"; /stop: "stop".
 
-Group privacy stays on: Telegram delivers commands to such a bot, and the bot
-has no use for ordinary messages.
+Besides the commands the bot reads one kind of ordinary message: a curator's notice
+that a lesson is in another room. Telegram hides ordinary messages from a bot with
+Group Privacy on, so it has to be off (or the bot an administrator).
+
+The bot can work in several groups at once, each added by its own /go.
 
 Only the people in `bot.trusted_users` command the bot. Everyone else is ignored
 without a word (an answer would only tell a stranger that the bot is alive), and a
-group that a stranger adds the bot to is left at once.
+group that a stranger adds the bot to is left at once, unless the group is listed in
+`bot.trusted_chats`.
 """
 
 from __future__ import annotations
@@ -21,6 +25,7 @@ from aiogram.types import ChatMemberUpdated, Message
 
 from app.bot import errors
 from app.bot.service import BotService
+from app.parsing.curator import parse_room_notice
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +35,7 @@ _DELETE_TRIES = 3
 _DELETE_PAUSE = 2.0
 
 _IN_GROUP = F.chat.type.in_({"group", "supergroup"})
+_BOT_IS_OUT = F.new_chat_member.status.in_({ChatMemberStatus.LEFT, ChatMemberStatus.KICKED})
 
 
 def _is_trusted(message: Message, service: BotService) -> bool:
@@ -67,6 +73,41 @@ async def go(message: Message, service: BotService) -> None:
         pass  # no delete right: leaving the command in the chat is harmless
 
 
+async def stop(message: Message, service: BotService) -> None:
+    """/stop: the bot stops posting to this group (it stays a member, the posts stay too)."""
+    if not _is_trusted(message, service):
+        return
+    if service.remove_target(str(message.chat.id)):
+        await message.answer("Больше не пишу в этот чат. Вернуть: /go.", disable_notification=True)
+    else:
+        await message.answer("Сюда я и не пишу. Начать: /go.", disable_notification=True)
+
+
+async def curator_notice(message: Message, service: BotService) -> None:
+    """A curator's "в 13.50 у ОККИПд-307 пара будет в 314 аудитории": change the room.
+
+    Only people from `curators` / `trusted_users`, only in a group the bot works in.
+    Everything else in the chat is none of the bot's business and gets no answer.
+    """
+    notice = parse_room_notice(message.text or "")
+    if notice is None or not service.works_in(str(message.chat.id)):
+        return
+    user = message.from_user
+    if user is None or user.id not in service.curators:
+        # The log is where the owner finds the id to put into curators.
+        logger.warning(
+            "Игнорирую сообщение о смене аудитории от пользователя %s (%s): его нет в curators",
+            user.id if user else "?",
+            f"@{user.username}" if user and user.username else "без ника",
+        )
+        return
+    reply = await service.correct_room(
+        notice, author_id=user.id, chat_id=str(message.chat.id), text=message.text or ""
+    )
+    if reply is not None:
+        await message.reply(reply, disable_notification=True)
+
+
 async def _delete_notice(message: Message) -> None:
     """Deletes the notice, retrying what may pass: one network blip must not leave it for good."""
     for attempt in range(1, _DELETE_TRIES + 1):
@@ -102,7 +143,8 @@ async def tidy_pin_notice(message: Message, bot: Bot) -> None:
 async def leave_a_group_a_stranger_added_me_to(
     event: ChatMemberUpdated, bot: Bot, service: BotService
 ) -> None:
-    """The bot is added to a group: stay if a trusted person did it, otherwise leave.
+    """The bot is added to a group: stay if the group is whitelisted or a trusted person
+    did it, otherwise leave.
 
     Only a fresh join counts; a promotion to administrator or a change of rights in
     a group the bot already belongs to is not "being added".
@@ -111,10 +153,13 @@ async def leave_a_group_a_stranger_added_me_to(
         return
     was_out = event.old_chat_member.status in (ChatMemberStatus.LEFT, ChatMemberStatus.KICKED)
     is_in = event.new_chat_member.status in (ChatMemberStatus.MEMBER, ChatMemberStatus.ADMINISTRATOR)
-    if not (was_out and is_in) or event.from_user.id in service.trusted_users:
+    if not (was_out and is_in):
+        return
+    if event.chat.id in service.trusted_chats or event.from_user.id in service.trusted_users:
         return
     logger.warning(
-        "Пользователь %s (не из trusted_users) добавил бота в группу %s: выхожу",
+        "Пользователь %s (не из trusted_users) добавил бота в группу %s, её нет в "
+        "trusted_chats: выхожу",
         event.from_user.id,
         event.chat.id,
     )
@@ -124,11 +169,23 @@ async def leave_a_group_a_stranger_added_me_to(
         logger.warning("Не удалось выйти из группы %s: %s", event.chat.id, error)
 
 
+async def forget_a_group_the_bot_left(event: ChatMemberUpdated, service: BotService) -> None:
+    """Kicked or left: stop posting there, or every tick would fail on that chat."""
+    if service.remove_target(str(event.chat.id)):
+        logger.warning("Бота убрали из группы %s: больше не пишу туда", event.chat.id)
+
+
 def build_router() -> Router:
     """A fresh router each time: aiogram lets a router join only one dispatcher."""
     router = Router(name="commands")
     router.message.register(go_outside_a_group, Command("go", ignore_case=True), ~_IN_GROUP)
     router.message.register(go, Command("go", ignore_case=True), _IN_GROUP)
+    router.message.register(stop, Command("stop", ignore_case=True), _IN_GROUP)
     router.message.register(tidy_pin_notice, F.pinned_message)
+    # aiogram runs only the first handler whose filters pass, so the two must not overlap:
+    # this one takes the bot's departure, the next one its arrival.
+    router.my_chat_member.register(forget_a_group_the_bot_left, _IN_GROUP, _BOT_IS_OUT)
     router.my_chat_member.register(leave_a_group_a_stranger_added_me_to)
+    # Last: a command or a service message must never reach the notice parser.
+    router.message.register(curator_notice, _IN_GROUP, F.text)
     return router

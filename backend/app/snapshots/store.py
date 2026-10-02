@@ -16,6 +16,7 @@ from app.models.domain import (
     SnapshotSource,
     SnapshotStatus,
 )
+from app.snapshots.overrides import RoomOverride
 
 _LESSON_COLUMNS = (
     "snapshot_id, source_id, date, starts_at, ends_at, time_label, discipline, "
@@ -300,3 +301,43 @@ def _event_from_row(row: sqlite3.Row) -> ChangeEvent:
         id=_int(row, "id"),
         detected_at=moscow.parse_isoformat(_text(row, "detected_at")),
     )
+
+
+def save_room_override(
+    conn: sqlite3.Connection,
+    *,
+    override: RoomOverride,
+    set_at: dt.datetime,
+    set_by: int | None,
+    chat_id: str | None,
+    message_text: str,
+) -> None:
+    """Запоминает аудиторию из сообщения куратора. Правка той же пары заменяет прежнюю."""
+    conn.execute(
+        "INSERT INTO room_overrides (date, starts, room, set_at, set_by, chat_id, message_text)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?)"
+        " ON CONFLICT (date, starts) DO UPDATE SET room = excluded.room, set_at = excluded.set_at,"
+        " set_by = excluded.set_by, chat_id = excluded.chat_id,"
+        " message_text = excluded.message_text",
+        (
+            override.day.isoformat(),
+            override.start,
+            override.room,
+            moscow.isoformat(set_at),
+            set_by,
+            chat_id,
+            message_text,
+        ),
+    )
+
+
+def room_overrides(conn: sqlite3.Connection) -> list[RoomOverride]:
+    rows = conn.execute("SELECT date, starts, room FROM room_overrides").fetchall()
+    return [
+        RoomOverride(
+            day=dt.date.fromisoformat(str(row["date"])),
+            start=str(row["starts"]),
+            room=str(row["room"]),
+        )
+        for row in rows
+    ]

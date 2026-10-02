@@ -22,6 +22,7 @@ from aiogram.methods import DeleteMessage, LeaveChat
 from aiogram.types import (
     Chat,
     ChatMemberAdministrator,
+    ChatMemberBanned,
     ChatMemberLeft,
     ChatMemberMember,
     ChatMemberUpdated,
@@ -37,6 +38,7 @@ from app.bot.handlers import NOT_A_GROUP
 from app.bot.runner import build_dispatcher
 from app.bot.service import BotService
 from app.config import AppConfig, BotConfig
+from app.bot.store import Target
 from app.models.db import connect
 from app.snapshots.service import ScheduleService
 from tests.fakes import BOT_ID, Clock, FakeRenderer, FakeTelegram, save_demo
@@ -129,7 +131,7 @@ async def test_a_stranger_gets_no_answer_and_nothing_happens(
         await dispatcher.feed_update(telegram.bot, _go(sender=STRANGER))
 
     assert telegram.calls == []  # not a word, not even "no"
-    assert fresh_bot.bind_target() is False  # the chat was not adopted
+    assert fresh_bot.load_targets() == []  # the chat was not adopted
     assert f"пользователя {STRANGER}" in caplog.text  # but the owner can find the id in the log
 
 
@@ -226,7 +228,7 @@ def _elsewhere(*, by: int, update_id: int) -> Update:
     return Update(update_id=update_id, message=message)
 
 
-async def test_a_trusted_go_in_another_group_moves_the_bot_there(
+async def test_a_trusted_go_in_another_group_adds_it_next_to_the_first(
     dispatcher: Dispatcher,
     fresh_bot: BotService,
     fresh_config: AppConfig,
@@ -236,16 +238,22 @@ async def test_a_trusted_go_in_another_group_moves_the_bot_there(
     at(TUESDAY, "10:00")
     save_demo(fresh_config, TUESDAY)
     await dispatcher.feed_update(telegram.bot, _go(update_id=1))
-    assert fresh_bot.bind_target()
+    assert fresh_bot.load_targets() == [Target(str(GROUP_CHAT), None)]
 
     await dispatcher.feed_update(telegram.bot, _elsewhere(by=TRUSTED, update_id=2))
 
-    with connect(fresh_config.db_path) as conn:
-        assert bot_store.target(conn) == ("-100999", None)  # one group at a time, the latest
+    assert fresh_bot.load_targets() == [
+        Target(str(GROUP_CHAT), None),
+        Target("-100999", None),
+    ]  # two groups at once: the second did not push the first out
 
 
-async def test_a_stranger_cannot_take_the_bot_away_from_its_group(
-    dispatcher: Dispatcher, fresh_config: AppConfig, telegram: FakeTelegram, at: Clock
+async def test_a_stranger_cannot_add_a_group_to_the_bot(
+    dispatcher: Dispatcher,
+    fresh_bot: BotService,
+    fresh_config: AppConfig,
+    telegram: FakeTelegram,
+    at: Clock,
 ) -> None:
     at(TUESDAY, "10:00")
     save_demo(fresh_config, TUESDAY)
@@ -254,9 +262,80 @@ async def test_a_stranger_cannot_take_the_bot_away_from_its_group(
 
     await dispatcher.feed_update(telegram.bot, _elsewhere(by=STRANGER, update_id=2))
 
-    with connect(fresh_config.db_path) as conn:
-        assert bot_store.target(conn) == (str(GROUP_CHAT), None)  # still the first group
+    assert fresh_bot.load_targets() == [Target(str(GROUP_CHAT), None)]  # only the first group
     assert telegram.calls == []
+
+
+async def test_stop_removes_the_group_and_leaves_the_others(
+    dispatcher: Dispatcher, fresh_bot: BotService, telegram: FakeTelegram
+) -> None:
+    fresh_bot.add_target(str(GROUP_CHAT), None)
+    fresh_bot.add_target("-100999", None)
+
+    await dispatcher.feed_update(telegram.bot, _go(text="/stop"))
+
+    assert fresh_bot.load_targets() == [Target("-100999", None)]
+    assert telegram.kinds() == ["message"]  # one quiet confirmation
+    assert telegram.silent == [True]
+
+
+async def test_stop_in_a_group_the_bot_does_not_post_to_says_so(
+    dispatcher: Dispatcher, telegram: FakeTelegram
+) -> None:
+    await dispatcher.feed_update(telegram.bot, _go(text="/stop"))
+
+    assert telegram.texts and "Начать: /go" in telegram.texts[0]
+
+
+async def test_a_stranger_cannot_stop_the_bot(
+    dispatcher: Dispatcher, fresh_bot: BotService, telegram: FakeTelegram
+) -> None:
+    fresh_bot.add_target(str(GROUP_CHAT), None)
+
+    await dispatcher.feed_update(telegram.bot, _go(text="/stop", sender=STRANGER))
+
+    assert fresh_bot.load_targets() == [Target(str(GROUP_CHAT), None)]
+    assert telegram.calls == []
+
+
+def _removed(*, chat_id: int, status: str = "kicked", update_id: int = 40) -> Update:
+    user = _user(BOT_ID, bot=True)
+    new = (
+        ChatMemberBanned(status=ChatMemberStatus.KICKED, user=user, until_date=_WHEN)
+        if status == "kicked"
+        else ChatMemberLeft(status=ChatMemberStatus.LEFT, user=user)
+    )
+    event = ChatMemberUpdated(
+        chat=Chat(id=chat_id, type="supergroup"),
+        from_user=_user(STRANGER),
+        date=_WHEN,
+        old_chat_member=ChatMemberMember(status=ChatMemberStatus.MEMBER, user=user),
+        new_chat_member=new,
+    )
+    return Update(update_id=update_id, my_chat_member=event)
+
+
+@pytest.mark.parametrize("status", ["kicked", "left"])
+async def test_a_group_the_bot_was_removed_from_is_forgotten(
+    dispatcher: Dispatcher, fresh_bot: BotService, telegram: FakeTelegram, status: str
+) -> None:
+    fresh_bot.add_target(str(GROUP_CHAT), None)
+    fresh_bot.add_target("-100999", None)
+
+    await dispatcher.feed_update(telegram.bot, _removed(chat_id=GROUP_CHAT, status=status))
+
+    assert fresh_bot.load_targets() == [Target("-100999", None)]
+    assert telegram.calls == []  # nothing to say in a chat that no longer has the bot
+
+
+async def test_leaving_a_strangers_group_does_not_disturb_the_known_ones(
+    dispatcher: Dispatcher, fresh_bot: BotService, telegram: FakeTelegram
+) -> None:
+    fresh_bot.add_target(str(GROUP_CHAT), None)
+
+    await dispatcher.feed_update(telegram.bot, _removed(chat_id=-100321, status="left"))
+
+    assert fresh_bot.load_targets() == [Target(str(GROUP_CHAT), None)]
 
 
 # -- being added to groups ------------------------------------------------------------------
@@ -326,6 +405,44 @@ async def test_a_group_a_trusted_person_added_the_bot_to_is_kept(
     await dispatcher.feed_update(telegram.bot, _added(by=TRUSTED))
 
     assert telegram.calls == []  # it waits there for that person's /go
+
+
+@pytest.fixture
+def whitelisted_dispatcher(fresh_config: AppConfig, telegram: FakeTelegram) -> Dispatcher:
+    bot = fresh_config.bot.model_copy(update={"trusted_chats": [-100555, -100777]})
+    config = fresh_config.model_copy(update={"bot": bot})
+    return build_dispatcher(BotService(config, telegram.bot, FakeRenderer()))
+
+
+@pytest.mark.parametrize("chat_id", [-100555, -100777])
+async def test_a_whitelisted_group_is_kept_even_if_a_stranger_added_the_bot(
+    whitelisted_dispatcher: Dispatcher, telegram: FakeTelegram, chat_id: int
+) -> None:
+    await whitelisted_dispatcher.feed_update(telegram.bot, _added(by=STRANGER, chat_id=chat_id))
+
+    assert telegram.calls == []
+
+
+async def test_a_group_outside_the_whitelist_is_still_left(
+    whitelisted_dispatcher: Dispatcher, telegram: FakeTelegram
+) -> None:
+    await whitelisted_dispatcher.feed_update(telegram.bot, _added(by=STRANGER, chat_id=-100999))
+
+    assert telegram.calls == [("leave", -100999)]
+
+
+async def test_a_stranger_still_cannot_command_the_bot_in_a_whitelisted_group(
+    fresh_config: AppConfig, telegram: FakeTelegram
+) -> None:
+    bot = fresh_config.bot.model_copy(update={"trusted_chats": [GROUP_CHAT]})
+    config = fresh_config.model_copy(update={"bot": bot})
+    dispatcher = build_dispatcher(BotService(config, telegram.bot, FakeRenderer()))
+
+    await dispatcher.feed_update(telegram.bot, _go(sender=STRANGER))
+
+    with connect(config.db_path) as conn:
+        assert bot_store.targets(conn) == []
+    assert telegram.calls == []
 
 
 async def test_a_promotion_in_a_group_the_bot_already_belongs_to_is_not_being_added(

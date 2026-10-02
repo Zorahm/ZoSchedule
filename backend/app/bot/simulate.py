@@ -78,16 +78,12 @@ class _Clock:
 
 def _show_ledger(config: AppConfig) -> None:
     with connect(config.db_path) as conn:
-        chat = bot_store.target(conn)
-        rows = (
-            [
-                (kind, message.day.isoformat(), message.message_id)
-                for kind in ("week", "today", "changes")
-                for message in bot_store.all_of_kind(conn, chat_id=chat[0], kind=kind)
-            ]
-            if chat
-            else []
-        )
+        rows = [
+            (kind, message.day.isoformat(), message.message_id)
+            for chat in bot_store.targets(conn)
+            for kind in ("week", "today", "changes")
+            for message in bot_store.all_of_kind(conn, chat_id=chat.chat, kind=kind)
+        ]
     listing = ", ".join(f"{kind} {day} #{mid}" for kind, day, mid in rows) or "пусто"
     print(f"      у бота на учёте: {listing}")
 
@@ -106,6 +102,8 @@ def copy_real_database(source: Path, dest: Path, *, before: dt.datetime) -> None
         origin.backup(target)
         target.execute("DELETE FROM bot_messages")
         target.execute("DELETE FROM bot_state")
+        # The real database may predate the table; `prepare()` recreates it empty.
+        target.execute("DROP TABLE IF EXISTS bot_targets")
         newest = target.execute("SELECT MAX(taken_at) FROM snapshots").fetchone()[0]
         if newest is not None:
             shift = dt.datetime.fromisoformat(newest) - (before - dt.timedelta(hours=1))
@@ -141,7 +139,7 @@ async def run(config: AppConfig, *, pause: float, real_source: Path | None = Non
     telegram.session.middleware(_Trace())
     # No `schedule` here: the bot must not poll the real site and replace the demo data.
     bot = BotService(config, telegram, PlaywrightRenderer(config.bot.browser_path))
-    bot.set_target(config.bot.chat_id, config.bot.thread_id)
+    bot.add_target(config.bot.chat_id, config.bot.thread_id)
 
     clock = _Clock()
     original = moscow.now

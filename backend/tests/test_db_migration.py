@@ -10,7 +10,9 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-from app.models.db import init_db
+from app.bot import store as bot_store
+from app.bot.store import Target
+from app.models.db import connect, init_db
 
 # Схема снимков до появления второго источника расписания.
 _OLD_SCHEMA = """
@@ -107,3 +109,65 @@ def test_init_is_idempotent(tmp_path: Path) -> None:
     init_db(path)
     init_db(path)
     assert "source" in _columns(path, "snapshots")
+
+
+def _old_bot_state(path: Path, *, thread: str) -> None:
+    """База бота из времён одного чата: чат, тема и курсор лежали в `bot_state`."""
+    with sqlite3.connect(path) as conn:
+        conn.execute("CREATE TABLE bot_state (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        conn.executemany(
+            "INSERT INTO bot_state (key, value) VALUES (?, ?)",
+            [
+                ("chat_id", "-100500"),
+                ("thread_id", thread),
+                ("last_event_id", "12"),
+                ("update_offset", "77"),
+            ],
+        )
+
+
+def test_the_single_remembered_chat_becomes_the_first_target(tmp_path: Path) -> None:
+    path = tmp_path / "old.db"
+    _old_bot_state(path, thread="7")
+
+    init_db(path)
+
+    with connect(path) as conn:
+        assert bot_store.targets(conn) == [Target("-100500", 7)]
+        assert bot_store.last_event_id(conn, "-100500") == 12  # the feed position came along
+        assert bot_store.update_offset(conn) == 77  # what is not about the chat is untouched
+        keys = {row["key"] for row in conn.execute("SELECT key FROM bot_state")}
+    assert keys == {"update_offset"}
+
+
+def test_a_chat_without_a_topic_migrates_without_one(tmp_path: Path) -> None:
+    path = tmp_path / "old.db"
+    _old_bot_state(path, thread="")  # the old code wrote an empty string for "no topic"
+
+    init_db(path)
+
+    with connect(path) as conn:
+        assert bot_store.targets(conn) == [Target("-100500", None)]
+
+
+def test_the_migration_runs_once(tmp_path: Path) -> None:
+    path = tmp_path / "old.db"
+    _old_bot_state(path, thread="7")
+    init_db(path)
+    with connect(path) as conn:
+        bot_store.add_target(conn, "-100600", None)
+        bot_store.remove_target(conn, "-100500")
+
+    init_db(path)  # a restart: the removed chat must not come back from the old keys
+
+    with connect(path) as conn:
+        assert bot_store.targets(conn) == [Target("-100600", None)]
+
+
+def test_a_database_without_any_bot_state_gets_no_targets(tmp_path: Path) -> None:
+    path = tmp_path / "fresh.db"
+
+    init_db(path)
+
+    with connect(path) as conn:
+        assert bot_store.targets(conn) == []

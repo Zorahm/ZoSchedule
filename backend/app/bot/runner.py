@@ -49,8 +49,9 @@ async def open_service(
     one lock; standalone the bot brings its own and polls the site itself."""
     bot = make_bot(config.bot.token.get_secret_value(), proxy=config.bot.proxy_url)
     try:
+        schedule = schedule or ScheduleService(config)
         yield BotService(
-            config, bot, PlaywrightRenderer(config.bot.browser_path), schedule or ScheduleService(config)
+            config, bot, PlaywrightRenderer(config.bot.browser_path), schedule, schedule
         )
     finally:
         await bot.session.close()
@@ -60,8 +61,19 @@ async def _on_startup(bot: Bot) -> None:
     # Cosmetic, and Telegram may be unreachable right now: the bot must still start.
     try:
         me = await bot.me()
+        if not me.can_read_all_group_messages:
+            # Group Privacy hides ordinary messages from the bot: the curator's notice
+            # would never arrive. Commands still work, so this is only a warning.
+            logger.warning(
+                "У бота включён Group Privacy: сообщения куратора в группах не дойдут. "
+                "Отключите в @BotFather (/setprivacy → Disable) и добавьте бота в группы заново "
+                "или сделайте его администратором"
+            )
         await bot.set_my_commands(
-            [BotCommand(command="go", description="Запустить бота в этом чате")]
+            [
+                BotCommand(command="go", description="Запустить бота в этом чате"),
+                BotCommand(command="stop", description="Перестать писать в этот чат"),
+            ]
         )
     except errors.TELEGRAM_ERRORS as error:
         logger.warning("Не удалось представиться Telegram: %s", error)
@@ -97,8 +109,8 @@ async def run_forever(config: AppConfig, schedule: ScheduleService | None = None
         if not config.bot.trusted_users:
             logger.warning(
                 "trusted_users пуст: команду /go не примет никто, а из любой группы, "
-                "куда бота добавят, он выйдет. Задайте id в config.toml или "
-                "ZOSCHEDULE_BOT_TRUSTED_USERS"
+                "куда бота добавят (кроме trusted_chats), он выйдет. Задайте id в "
+                "config.toml или ZOSCHEDULE_BOT_TRUSTED_USERS"
             )
         if config.bot.proxy_label:
             logger.info("Telegram через прокси %s", config.bot.proxy_label)
