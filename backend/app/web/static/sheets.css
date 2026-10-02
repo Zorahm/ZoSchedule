@@ -73,3 +73,14 @@
 .screen .bar-b { padding-top: 12px; }
 .screen .bar-b .btn { flex: 1; }
 .err { color: var(--stale); font-size: 13px; padding: 0 16px; min-height: 18px; }
+
+/* ---------- отправка куратору ---------- */
+.drawer .lead { color: var(--muted); font-size: 15px; max-width: 40ch; }
+.drawer .warn { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--absent-bg); font-size: 14px; background: color-mix(in srgb, var(--absent-bg) 10%, transparent); }
+.drawer .err { padding: 0; }
+.btn.wide { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 9px; }
+.btn.wide svg, .btn.send svg { width: 18px; height: 18px; flex: none; }
+.btn.send { display: inline-flex; align-items: center; gap: 9px; padding: 0 18px; }
+.done { display: flex; flex-direction: column; gap: 10px; padding-top: 6px; }
+.done .ok { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--present-bg); color: var(--present-ink); }
+.done .ok svg { width: 22px; height: 22px; }

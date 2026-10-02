@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Картинка для куратора</title>
+<!-- Макет картинки, которую бот присылает старосте («Отправить куратору»): 1080 px, светлая
+     тема всегда, потому что картинку пересылают и печатают. Данные подставные; ?partial
+     показывает вид с неотмеченными ячейками. Боевой шаблон повторит эту вёрстку. -->
+<style>
+@font-face{font-family:'Onest';font-weight:100 900;src:url(../../bot/assets/fonts/Onest-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Onest';font-weight:100 900;src:url(../../bot/assets/fonts/Onest-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F,U+2212}
+@font-face{font-family:'JetBrains Mono';font-weight:100 800;src:url(../../bot/assets/fonts/JetBrainsMono-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'JetBrains Mono';font-weight:100 800;src:url(../../bot/assets/fonts/JetBrainsMono-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F,U+2212}
+@font-face{font-family:'Unbounded';font-weight:200 900;src:url(../../bot/assets/fonts/Unbounded-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Unbounded';font-weight:200 900;src:url(../../bot/assets/fonts/Unbounded-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F,U+2212}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#f4efe6;font-family:Onest,system-ui,sans-serif;color:#1a1611}
+.frame{width:1080px;padding:64px;display:flex;flex-direction:column;gap:36px;background:#f4efe6}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.top{display:flex;align-items:center;justify-content:space-between}
+.eyebrow{font-size:22px;line-height:28px;font-weight:600;letter-spacing:.08em;color:#5c5347}
+.eyebrow em{font-style:normal;text-transform:uppercase}
+.pill{font-size:22px;line-height:28px;font-weight:600;padding:6px 16px;border:1px solid #8a7f70;border-radius:999px}
+h1{font-family:Unbounded,'Arial Black',sans-serif;font-size:96px;line-height:100px;font-weight:700;letter-spacing:-.02em}
+.sub{font-size:30px;line-height:40px;color:#5c5347;margin-top:12px}
+.sub b{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:400;color:#1a1611}
+table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;background:#fbf8f2;border:1px solid #d9cfbf;border-radius:10px;overflow:hidden}
+th,td{padding:0;text-align:center;font-weight:inherit}
+col.n{width:62px}col.who{width:410px}
+thead th{vertical-align:bottom;padding:18px 4px 14px;border-bottom:2px solid #1a1611;background:#fbf8f2}
+thead .t{font:700 30px/34px 'JetBrains Mono',monospace}
+thead .p{margin-top:2px;font:600 16px/22px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#5c5347;display:flex;align-items:center;justify-content:center;gap:8px}
+.dot{flex:none;width:12px;height:12px;border-radius:50%;background:var(--dot)}
+.k-blue{--dot:#3b6fd1}.k-green{--dot:#3f9a4c}.k-red{--dot:#e0442a}.k-gray{--dot:#a69a88}
+thead .num,thead .name{text-align:left;vertical-align:bottom;font:600 18px/22px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#5c5347}
+thead .num{padding-left:22px}
+tbody td,tbody th{height:50px;border-bottom:1px solid #e6ddce}
+tbody tr:nth-child(even) td,tbody tr:nth-child(even) th{background:#f7f2e9}
+tbody .num{font:500 18px/1 'JetBrains Mono',monospace;color:#8a7f70;text-align:left;padding-left:22px}
+tbody .name{text-align:left;font-size:25px;line-height:30px;font-weight:500;white-space:nowrap;padding-right:6px}
+.m{display:inline-grid;place-items:center;width:38px;height:38px;border-radius:9px;font:700 22px/1 'JetBrains Mono',monospace;vertical-align:middle}
+.m.p{background:#d8ecd5;color:#21502a;border:1.5px solid #a9d2a5}
+.m.n{background:#e0442a;color:#fff}
+.m.e{border:1.5px dashed #b6ab99;color:#b6ab99;font-weight:500}
+.gone .name{color:#8c2313}
+tfoot td,tfoot th{height:64px;border-top:2px solid #1a1611;background:#fbf8f2;vertical-align:middle}
+tfoot th{text-align:left;padding-left:22px;font:600 17px/22px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#5c5347}
+tfoot .s{font:700 30px/1 'JetBrains Mono',monospace}
+tfoot .s.z{color:#8a7f70;font-weight:500}
+tfoot small{display:block;margin-top:3px;font:500 15px/18px 'JetBrains Mono',monospace;color:#8c2313}
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:14px 28px;font-size:22px;line-height:28px;color:#5c5347}
+.legend span{display:flex;align-items:center;gap:10px}
+.legend .m{width:30px;height:30px;font-size:18px;border-radius:7px}
+.legend b{margin-left:auto;font:400 24px/28px 'JetBrains Mono',monospace;color:#1a1611}
+.foot{display:flex;align-items:center;justify-content:space-between;padding-top:24px;border-top:1px solid #d9cfbf}
+.logo{font-family:Unbounded,'Arial Black',sans-serif;font-size:30px;line-height:36px;font-weight:700}
+.logo span{color:#ff4d2e}
+.upd{font-size:22px;line-height:28px;color:#5c5347}
+.plan{display:flex;flex-direction:column;background:#fbf8f2;border:1px solid #d9cfbf;border-radius:10px}
+.pl{display:grid;grid-template-columns:44px 176px minmax(0,1fr);align-items:baseline;gap:0 14px;padding:15px 24px;border-bottom:1px solid #e6ddce}
+.pl:last-child{border-bottom:0}
+.pl .no{font:700 20px/26px 'JetBrains Mono',monospace;color:#5c5347}
+.pl .tm{font:600 24px/30px 'JetBrains Mono',monospace;white-space:nowrap}
+.pl .tm small{font:400 20px/30px 'JetBrains Mono',monospace;color:#5c5347}
+.pl .ti{font-size:25px;line-height:30px;font-weight:600;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+
+.pl .me{grid-column:3;font-size:20px;line-height:26px;color:#5c5347}
+.pl .me.unknown{font-style:italic}
+</style>
+</head>
+<body>
+<div class="frame" id="frame"></div>
+<script>
+(function () {
+  var partial = location.search.indexOf('partial') >= 0;
+  var NAMES = ['Абрамов Илья Сергеевич', 'Баранова Алина Игоревна', 'Васильев Артём Олегович', 'Громова Дарья Андреевна', 'Дроздов Кирилл Павлович',
+    'Егорова Полина Артёмовна', 'Жуков Максим Денисович', 'Зайцева Мария Ильинична', 'Иванов Никита Алексеевич', 'Исаева Ксения Романовна',
+    'Козлов Егор Викторович', 'Лебедева София Дмитриевна', 'Макаров Тимур Русланович', 'Новикова Анастасия Павловна', 'Орлов Матвей Степанович',
+    'Панина Вероника Сергеевна', 'Романов Данила Евгеньевич', 'Сидоров Артур Николаевич', 'Тихонова Елизавета Максимовна', 'Устинов Глеб Аркадьевич',
+    'Фомина Алиса Валерьевна', 'Харитонов Лев Борисович', 'Шевцова Дарина Олеговна', 'Яковлев Руслан Маратович'];
+  var PAIRS = [
+    { start: '08:30', end: '10:00', title: 'Математический анализ', tone: 'blue', teacher: 'Орлов П. П.', room: '210' },
+    { start: '10:10', end: '11:40', title: 'Веб-программирование', tone: 'green', teacher: 'Петров А. А.', room: '305' },
+    { start: '12:10', end: '13:40', title: 'Операционные системы', tone: 'blue', teacher: null, room: '305' },
+    { start: '13:50', end: '15:20', title: 'Иностранный язык в профессиональной деятельности', tone: 'green', teacher: 'Сидорова Н. В.', room: '402' },
+  ];
+  function mark(si, pi) {
+    if (si === 2) return 'n';                                  // не было весь день
+    if ((si * 7 + pi * 13) % 23 === 3 || (si === 16 && pi >= 2)) return 'n';
+    if (partial && si >= 19 && pi >= 2) return 'e';            // староста отправил недозаполненное
+    return 'p';
+  }
+  var h = function (tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  var top = h('div', 'top');
+  var eb = h('div', 'eyebrow mono'); eb.append('ОККИПд-307 · ', h('em', null, 'посещаемость'));
+  top.append(eb, h('div', 'pill', 'Для куратора'));
+  var head = h('div'); head.append(h('h1', null, 'Пятница'));
+  var sub = h('div', 'sub'); sub.append('2 октября 2026 · '); sub.append(h('b', null, NAMES.length + ' студента, ' + PAIRS.length + ' пары'));
+  head.append(sub);
+
+  var plan = h('div', 'plan');
+  PAIRS.forEach(function (p, i) {
+    var row = h('div', 'pl k-' + p.tone), tm = h('div', 'tm', p.start), ti = h('div', 'ti');
+    tm.append(h('small', null, '–' + p.end)); ti.append(p.title);
+    row.append(h('div', 'no', i + 1), tm, ti);
+    row.append(h('div', 'me' + (p.teacher ? '' : ' unknown'), (p.teacher || 'преподаватель не указан на сайте') + (p.room ? ' · ауд. ' + p.room : '')));
+    plan.append(row);
+  });
+
+  var table = h('table');
+  var colgroup = h('colgroup'); colgroup.append(h('col', 'n'), h('col', 'who'));
+  PAIRS.forEach(function () { colgroup.append(h('col')); });
+  var thead = h('thead'), tr = h('tr');
+  tr.append(h('th', 'num', '№'), h('th', 'name', 'ФИО'));
+  PAIRS.forEach(function (p, i) {
+    var th = h('th'); var t = h('div', 't', p.start);
+    th.append(t, h('div', 'p', (i + 1) + ' пара')); tr.append(th);
+  });
+  thead.append(tr);
+  var tbody = h('tbody'), absent = PAIRS.map(function () { return 0; }), empty = PAIRS.map(function () { return 0; });
+  NAMES.forEach(function (name, si) {
+    var row = h('tr'), marks = PAIRS.map(function (_, pi) { return mark(si, pi); });
+    var cells = [h('th', 'num', si + 1), h('th', 'name', name)];
+    marks.forEach(function (m, pi) {
+      if (m === 'n') absent[pi]++; if (m === 'e') empty[pi]++;
+      var td = h('td'); td.append(h('span', 'm ' + m, m === 'p' ? 'П' : m === 'n' ? 'Н' : '–')); cells.push(td);
+    });
+    if (marks.every(function (m) { return m === 'n'; })) row.className = 'gone';
+    row.append.apply(row, cells); tbody.append(row);
+  });
+  var tfoot = h('tfoot'), fr = h('tr'); var lab = h('th', null, 'Отсутствуют'); lab.colSpan = 2; fr.append(lab);
+  PAIRS.forEach(function (_, pi) {
+    var td = h('td'); td.append(h('div', 's mono' + (absent[pi] ? '' : ' z'), absent[pi] || '—'));
+    if (empty[pi]) td.append(h('small', null, 'не отмечено ' + empty[pi]));
+    fr.append(td);
+  });
+  tfoot.append(fr); table.append(colgroup, thead, tbody, tfoot);
+
+  var total = absent.reduce(function (a, b) { return a + b; }, 0), blank = empty.reduce(function (a, b) { return a + b; }, 0);
+  var legend = h('div', 'legend');
+  [['p', 'П', 'присутствует'], ['n', 'Н', 'отсутствует'], ['e', '–', 'не отмечено']].forEach(function (x) {
+    var s = h('span'); s.append(h('i', 'm ' + x[0], x[1]), x[2]); legend.append(s);
+  });
+  legend.append(h('b', null, 'Н всего: ' + total + (blank ? ' · не отмечено: ' + blank : '')));
+
+  var foot = h('div', 'foot'); var logo = h('div', 'logo'); logo.append('Zo', h('span', null, '/'), 'Schedule');
+  foot.append(logo, h('div', 'upd', 'Отправлено 2 окт., 15:42'));
+  document.getElementById('frame').append(top, head, plan, table, legend, foot);
+})();
+</script>
+</body>
+</html>

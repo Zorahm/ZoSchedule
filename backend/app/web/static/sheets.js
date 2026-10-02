@@ -20,6 +20,7 @@
     document.body.append(open);
     var first = drawer.querySelector('.act');
     if (first) first.focus({ preventScroll: true });
+    return drawer;
   }
 
   function actions(onPick, labels) {
@@ -62,6 +63,41 @@
     ]);
   }
 
+  /** Подтверждение отправки: что уйдёт, что не отмечено, и что делать дальше. */
+  function sendSheet(info, onSend) {
+    var error = h('div', { class: 'err', role: 'alert' });
+    var go = h('button', { class: 'btn wide', onclick: submit }, Zo.icon('send'), 'Прислать картинку');
+    var drawer = show([
+      h('div', null, h('div', { class: 'kicker mono' }, 'Для куратора'), h('h2', null, info.title)),
+      h('p', { class: 'lead' }, 'Бот пришлёт вам в чат картинку со всей таблицей: ' + info.students + ' ' +
+        Zo.plural(info.students, 'студент', 'студента', 'студентов') + ', ' + info.pairs + ' ' + Zo.plural(info.pairs, 'пара', 'пары', 'пар') +
+        ', с названиями пар. Перешлите её куратору.'),
+      info.left ? h('div', { class: 'warn' }, 'Не отмечено ' + info.left + ' ' + Zo.plural(info.left, 'ячейка', 'ячейки', 'ячеек') +
+        ': на картинке они будут пустыми. Лучше сначала доотметить.') : null,
+      error, go,
+      h('button', { class: 'btn ghost wide', onclick: close }, 'Отмена'),
+    ]);
+
+    async function submit() {
+      go.disabled = true; go.lastChild.textContent = 'Отправляю…'; error.textContent = '';
+      try {
+        await onSend();
+      } catch (e) {
+        error.textContent = e.message || 'Не удалось отправить';
+        go.disabled = false; go.lastChild.textContent = 'Прислать картинку';
+        return;
+      }
+      Zo.haptic('success');
+      var tg = window.Telegram && window.Telegram.WebApp;
+      drawer.replaceChildren.apply(drawer, [h('div', { class: 'grab' }),
+        h('div', { class: 'done' }, h('span', { class: 'ok' }, Zo.icon('check')),
+          h('h2', null, 'Картинка отправлена'),
+          h('p', { class: 'lead' }, 'Она в вашем чате с ботом. Откройте её и перешлите куратору.')),
+        tg && tg.close ? h('button', { class: 'btn wide', onclick: function () { tg.close(); } }, 'Перейти в чат') : null,
+        h('button', { class: 'btn ghost wide', onclick: close }, 'Остаться в журнале')].filter(Boolean));
+    }
+  }
+
   function toast(text, undo) {
     clearTimeout(toastTimer);
     var old = document.querySelector('.toast');
@@ -72,5 +108,5 @@
     toastTimer = setTimeout(function () { el.remove(); }, undo ? 6000 : 2600);
   }
 
-  Zo.sheets = { open: show, close: close, pair: pairSheet, student: studentSheet, toast: toast, isOpen: function () { return !!open; }, onClose: null };
+  Zo.sheets = { send: sendSheet, open: show, close: close, pair: pairSheet, student: studentSheet, toast: toast, isOpen: function () { return !!open; }, onClose: null };
 })();

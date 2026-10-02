@@ -63,6 +63,8 @@
         h('span', { class: 'sp' }),
         h('span', { class: 'save', 'data-s': save, role: 'status' },
           save === 'offline' ? 'нет связи' : save === 'saving' ? 'сохраняю' : 'сохранено'),
+        data.day.state === 'open' && day.students.length
+          ? h('button', { class: 'icon-btn', 'aria-label': 'Отправить куратору', onclick: on.send }, Zo.icon('send')) : null,
         h('button', { class: 'icon-btn', 'aria-label': 'Список группы', onclick: on.roster }, Zo.icon('users'))),
       h('div', { class: 'title-row' },
         h('h1', null, Zo.weekday(day.date)),
@@ -102,7 +104,9 @@
         seg('present', 'П', 'Присутствуют'), seg('absent', 'Н', 'Отсутствуют')) : null,
       left
         ? h('button', { class: 'btn fill ' + (mode === 'absent' ? 'n' : 'p'), onclick: on.fill }, 'Остальным ' + (mode === 'absent' ? 'Н' : 'П'))
-        : h('button', { class: 'btn', disabled: true }, on.scoped ? 'Пара отмечена' : 'Всё отмечено'));
+        : on.scoped
+          ? h('button', { class: 'btn', disabled: true }, 'Пара отмечена')
+          : h('button', { class: 'btn send', onclick: on.send }, Zo.icon('send'), 'Отправить куратору'));
   }
 
   function card(icon, title, text, button) {

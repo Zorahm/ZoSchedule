@@ -107,6 +107,7 @@
       });
       return delay({ saved: changes.length });
     },
+    sendReport: function () { return new Promise(function (ok) { setTimeout(function () { ok({ sent: true }); }, 900); }); },
     roster: function () { return delay({ students: sortedRoster() }); },
     saveRoster: function (list) {
       roster = list.map(function (row) { return { id: row.id || nextId++, name: row.name }; });

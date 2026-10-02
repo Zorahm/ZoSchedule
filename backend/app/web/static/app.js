@@ -24,7 +24,7 @@
 
   function drawChrome() {
     var data = S.data, on = {
-      roster: openRoster, back: function () { go(null); }, pick: go,
+      roster: openRoster, send: openSend, back: function () { go(null); }, pick: go,
       week: function (step) { S.weekOf = Zo.addDays(data.week[0].date, step); load(); },
     };
     top.replaceChildren(Zo.chrome.header(data, S.save, on));
@@ -33,7 +33,7 @@
     var day = data.day, pair = S.pair && pairAt(S.pair), all = Zo.table.stats(day), stats = all;
     if (pair) stats = { total: day.students.length, marked: all.slots[pair.slot].marked, absent: all.slots[pair.slot].absent };
     if (pair) foot.append(Zo.chrome.scope(pair, { open: function () { openPair(pair.slot); }, clear: function () { togglePair(pair.slot); } }));
-    foot.append(Zo.chrome.bar(stats, S.mode, { scoped: !!pair, fill: fillRest,
+    foot.append(Zo.chrome.bar(stats, S.mode, { scoped: !!pair, fill: fillRest, send: openSend,
       mode: function (m) { S.mode = m; Zo.haptic('select'); drawChrome(); } }));
   }
 
@@ -194,6 +194,22 @@
         Zo.sheets.toast(e.message); load(true);
       } else { setSave('offline'); clearTimeout(S.flushTimer); S.flushTimer = setTimeout(flush, RETRY_MS); }
     }
+  }
+
+  /* ---------- картинка для куратора ---------- */
+
+  function openSend() {
+    var day = S.data.day, all = Zo.table.stats(day);
+    Zo.sheets.send({
+      title: Zo.weekday(day.date) + ', ' + Zo.dayLabel(day.date),
+      students: students().length, pairs: day.pairs.length, left: all.total - all.marked,
+    }, async function () {
+      // Картинку рисует бот по базе, поэтому всё набранное должно успеть до неё долететь.
+      clearTimeout(S.flushTimer);
+      await flush();
+      if (S.queue.size) throw new Error('Нет связи: последние отметки ещё не сохранены');
+      await Zo.api.sendReport(day.date);
+    });
   }
 
   /* ---------- список группы ---------- */
