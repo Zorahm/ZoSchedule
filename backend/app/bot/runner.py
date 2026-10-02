@@ -61,7 +61,10 @@ async def _on_startup(bot: Bot) -> None:
     try:
         me = await bot.me()
         await bot.set_my_commands(
-            [BotCommand(command="go", description="Запустить бота в этом чате")]
+            [
+                BotCommand(command="go", description="Запустить бота в этом чате"),
+                BotCommand(command="stop", description="Перестать писать в этот чат"),
+            ]
         )
     except errors.TELEGRAM_ERRORS as error:
         logger.warning("Не удалось представиться Telegram: %s", error)

@@ -13,6 +13,8 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
+from app import moscow
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS snapshots (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -93,6 +95,17 @@ CREATE TABLE IF NOT EXISTS bot_state (
     value TEXT NOT NULL
 );
 
+-- Чаты, куда бот пишет: по строке на каждую группу, где доверенный написал /go.
+-- Порядок вставки — порядок рассылки. `last_event_id` у каждого чата свой: сбой
+-- Telegram в одной группе не должен ни терять изменения для неё, ни слать их
+-- повторно в остальные. NULL — новый чат, прошлое для него не новости.
+CREATE TABLE IF NOT EXISTS bot_targets (
+    chat_id       TEXT    PRIMARY KEY,
+    thread_id     INTEGER,
+    added_at      TEXT    NOT NULL,
+    last_event_id INTEGER
+);
+
 """
 
 
@@ -144,6 +157,35 @@ def _add_missing_columns(conn: sqlite3.Connection) -> None:
             conn.execute(statement)
 
 
+def _migrate_single_target(conn: sqlite3.Connection) -> None:
+    """Бот помнил один чат в `bot_state`; теперь чаты живут в `bot_targets`.
+
+    Старый чат и общий курсор прочитанных изменений становятся первой строкой.
+    Ключи удаляются, чтобы повторный запуск ничего не воскресил.
+    """
+    state = {
+        str(row["key"]): str(row["value"])
+        for row in conn.execute(
+            "SELECT key, value FROM bot_state WHERE key IN ('chat_id', 'thread_id', 'last_event_id')"
+        )
+    }
+    chat = state.get("chat_id")
+    if chat is not None:
+        thread = state.get("thread_id")
+        cursor = state.get("last_event_id")
+        conn.execute(
+            "INSERT OR IGNORE INTO bot_targets (chat_id, thread_id, added_at, last_event_id)"
+            " VALUES (?, ?, ?, ?)",
+            (
+                chat,
+                int(thread) if thread else None,
+                moscow.isoformat(moscow.now()),
+                int(cursor) if cursor else None,
+            ),
+        )
+    conn.execute("DELETE FROM bot_state WHERE key IN ('chat_id', 'thread_id', 'last_event_id')")
+
+
 def init_db(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(path) as conn:
@@ -153,6 +195,7 @@ def init_db(path: Path) -> None:
         _add_missing_columns(conn)
         _drop_removed_columns(conn)
         conn.executescript(SCHEMA)
+        _migrate_single_target(conn)
 
 
 @contextmanager

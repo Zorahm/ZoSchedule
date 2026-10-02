@@ -1,7 +1,9 @@
-"""Chat commands and housekeeping. The only command is /go: "start working in this chat".
+"""Chat commands and housekeeping. /go: "start working in this chat"; /stop: "stop".
 
 Group privacy stays on: Telegram delivers commands to such a bot, and the bot
 has no use for ordinary messages.
+
+The bot can work in several groups at once, each added by its own /go.
 
 Only the people in `bot.trusted_users` command the bot. Everyone else is ignored
 without a word (an answer would only tell a stranger that the bot is alive), and a
@@ -31,6 +33,7 @@ _DELETE_TRIES = 3
 _DELETE_PAUSE = 2.0
 
 _IN_GROUP = F.chat.type.in_({"group", "supergroup"})
+_BOT_IS_OUT = F.new_chat_member.status.in_({ChatMemberStatus.LEFT, ChatMemberStatus.KICKED})
 
 
 def _is_trusted(message: Message, service: BotService) -> bool:
@@ -66,6 +69,16 @@ async def go(message: Message, service: BotService) -> None:
         await message.delete()  # tidy: the command did its job
     except errors.TELEGRAM_ERRORS:
         pass  # no delete right: leaving the command in the chat is harmless
+
+
+async def stop(message: Message, service: BotService) -> None:
+    """/stop: the bot stops posting to this group (it stays a member, the posts stay too)."""
+    if not _is_trusted(message, service):
+        return
+    if service.remove_target(str(message.chat.id)):
+        await message.answer("Больше не пишу в этот чат. Вернуть: /go.", disable_notification=True)
+    else:
+        await message.answer("Сюда я и не пишу. Начать: /go.", disable_notification=True)
 
 
 async def _delete_notice(message: Message) -> None:
@@ -129,11 +142,21 @@ async def leave_a_group_a_stranger_added_me_to(
         logger.warning("Не удалось выйти из группы %s: %s", event.chat.id, error)
 
 
+async def forget_a_group_the_bot_left(event: ChatMemberUpdated, service: BotService) -> None:
+    """Kicked or left: stop posting there, or every tick would fail on that chat."""
+    if service.remove_target(str(event.chat.id)):
+        logger.warning("Бота убрали из группы %s: больше не пишу туда", event.chat.id)
+
+
 def build_router() -> Router:
     """A fresh router each time: aiogram lets a router join only one dispatcher."""
     router = Router(name="commands")
     router.message.register(go_outside_a_group, Command("go", ignore_case=True), ~_IN_GROUP)
     router.message.register(go, Command("go", ignore_case=True), _IN_GROUP)
+    router.message.register(stop, Command("stop", ignore_case=True), _IN_GROUP)
     router.message.register(tidy_pin_notice, F.pinned_message)
+    # aiogram runs only the first handler whose filters pass, so the two must not overlap:
+    # this one takes the bot's departure, the next one its arrival.
+    router.my_chat_member.register(forget_a_group_the_bot_left, _IN_GROUP, _BOT_IS_OUT)
     router.my_chat_member.register(leave_a_group_a_stranger_added_me_to)
     return router

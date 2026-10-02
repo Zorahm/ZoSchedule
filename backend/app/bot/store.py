@@ -1,4 +1,4 @@
-"""Bot state in SQLite: which messages it has posted and how far it has read events."""
+"""Bot state in SQLite: the chats it posts to, its messages there, and how far each has read events."""
 
 from __future__ import annotations
 
@@ -11,10 +11,15 @@ from app import moscow
 
 Kind = Literal["week", "today", "changes"]
 
-_LAST_EVENT_KEY = "last_event_id"
-_CHAT_KEY = "chat_id"
-_THREAD_KEY = "thread_id"
 _OFFSET_KEY = "update_offset"
+
+
+@dataclass(frozen=True, slots=True)
+class Target:
+    """A chat the bot posts to; `thread` is the forum topic, if the group has topics."""
+
+    chat: str
+    thread: int | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,18 +84,16 @@ def forget(conn: sqlite3.Connection, record_id: int) -> None:
     conn.execute("DELETE FROM bot_messages WHERE id = ?", (record_id,))
 
 
-def last_event_id(conn: sqlite3.Connection) -> int | None:
-    """None until the first run: history must not be announced retroactively."""
-    row = conn.execute("SELECT value FROM bot_state WHERE key = ?", (_LAST_EVENT_KEY,)).fetchone()
-    return int(row["value"]) if row else None
+def last_event_id(conn: sqlite3.Connection, chat_id: str) -> int | None:
+    """None for a chat that has not read the feed yet: history is not announced retroactively."""
+    row = conn.execute(
+        "SELECT last_event_id FROM bot_targets WHERE chat_id = ?", (chat_id,)
+    ).fetchone()
+    return None if row is None or row["last_event_id"] is None else int(row["last_event_id"])
 
 
-def set_last_event_id(conn: sqlite3.Connection, value: int) -> None:
-    conn.execute(
-        "INSERT INTO bot_state (key, value) VALUES (?, ?)"
-        " ON CONFLICT (key) DO UPDATE SET value = excluded.value",
-        (_LAST_EVENT_KEY, str(value)),
-    )
+def set_last_event_id(conn: sqlite3.Connection, chat_id: str, value: int) -> None:
+    conn.execute("UPDATE bot_targets SET last_event_id = ? WHERE chat_id = ?", (value, chat_id))
 
 
 def _state(conn: sqlite3.Connection, key: str) -> str | None:
@@ -106,18 +109,27 @@ def _set_state(conn: sqlite3.Connection, key: str, value: str) -> None:
     )
 
 
-def target(conn: sqlite3.Connection) -> tuple[str, int | None] | None:
-    """The chat (and forum topic) where /go was last written, if any."""
-    chat = _state(conn, _CHAT_KEY)
-    if chat is None:
-        return None
-    thread = _state(conn, _THREAD_KEY)
-    return (chat, int(thread) if thread else None)
+def targets(conn: sqlite3.Connection) -> list[Target]:
+    """Every chat where /go was written, in the order they were added."""
+    rows = conn.execute("SELECT chat_id, thread_id FROM bot_targets ORDER BY rowid").fetchall()
+    return [
+        Target(str(row["chat_id"]), None if row["thread_id"] is None else int(row["thread_id"]))
+        for row in rows
+    ]
 
 
-def set_target(conn: sqlite3.Connection, chat_id: str, thread_id: int | None) -> None:
-    _set_state(conn, _CHAT_KEY, chat_id)
-    _set_state(conn, _THREAD_KEY, "" if thread_id is None else str(thread_id))
+def add_target(conn: sqlite3.Connection, chat_id: str, thread_id: int | None) -> None:
+    """Adds the chat; a repeated /go in a known chat only moves it to another topic."""
+    conn.execute(
+        "INSERT INTO bot_targets (chat_id, thread_id, added_at) VALUES (?, ?, ?)"
+        " ON CONFLICT (chat_id) DO UPDATE SET thread_id = excluded.thread_id",
+        (chat_id, thread_id, moscow.isoformat(moscow.now())),
+    )
+
+
+def remove_target(conn: sqlite3.Connection, chat_id: str) -> bool:
+    """Stops posting to the chat. Its message ledger stays: the old posts are still there."""
+    return conn.execute("DELETE FROM bot_targets WHERE chat_id = ?", (chat_id,)).rowcount > 0
 
 
 def update_offset(conn: sqlite3.Connection) -> int | None:

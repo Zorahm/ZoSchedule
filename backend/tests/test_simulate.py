@@ -9,7 +9,8 @@ from app import moscow
 from app.bot import store as bot_store
 from app.bot.simulate import copy_real_database
 from app.config import AppConfig
-from app.models.db import connect
+from app.bot.store import Target
+from app.models.db import connect, init_db
 from app.snapshots import store
 from tests.fakes import Clock, save_demo
 
@@ -34,7 +35,7 @@ def test_the_copy_is_backdated_and_wiped_of_bot_state_and_the_original_is_untouc
     save_demo(config, TUESDAY)
     save_demo(config, TUESDAY)  # a second snapshot: their order must survive
     with connect(config.db_path) as conn:
-        bot_store.set_target(conn, "-100", None)
+        bot_store.add_target(conn, "-100", None)
         bot_store.record(conn, chat_id="-100", kind="week", day=TUESDAY, message_id=5)
     original = _taken(config.db_path)
     copy = tmp_path / "copy.db"
@@ -43,14 +44,15 @@ def test_the_copy_is_backdated_and_wiped_of_bot_state_and_the_original_is_untouc
 
     assert _taken(config.db_path) == original  # the source: not a byte of it changed
     with connect(config.db_path) as conn:
-        assert bot_store.target(conn) == ("-100", None)
+        assert bot_store.targets(conn) == [Target("-100", None)]
 
     shifted = _taken(copy)
     assert shifted == sorted(shifted) and len(shifted) == 2
     assert shifted[-1] == _sunday_morning() - dt.timedelta(hours=1)
     assert shifted[-1] - shifted[0] == original[-1] - original[0]  # one common shift
+    init_db(copy)  # the bot's chats table is dropped from the copy and made again, empty
     with connect(copy) as conn:
-        assert bot_store.target(conn) is None
+        assert bot_store.targets(conn) == []
         assert bot_store.all_of_kind(conn, chat_id="-100", kind="week") == []
         latest = store.latest_ok(conn)
         assert latest is not None and latest.lesson_count > 0  # the lessons came along

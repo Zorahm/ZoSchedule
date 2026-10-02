@@ -108,7 +108,7 @@ async def _run(args: argparse.Namespace) -> None:
             # A demo database must not be overwritten by whatever the real site says.
             config = _without_refresh(config)
         async with open_service(config) as bot:
-            if not bot.bind_target():
+            if not bot.load_targets():
                 sys.exit("Нет чата: напишите /go в группе или задайте ZOSCHEDULE_BOT_CHAT_ID.")
             await bot.refresh(force=True)  # a manual command always works on fresh data
             if command == "post-week":
