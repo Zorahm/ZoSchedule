@@ -32,6 +32,11 @@ def active_students(conn: sqlite3.Connection) -> list[Student]:
     return sorted(students, key=lambda student: (sort_key(student.name), student.id))
 
 
+def roster_is_untouched(conn: sqlite3.Connection) -> bool:
+    """В списке не было ни одной записи, даже скрытой: староста его ещё не трогал."""
+    return conn.execute("SELECT 1 FROM roster LIMIT 1").fetchone() is None
+
+
 def _matching_rows(conn: sqlite3.Connection) -> tuple[dict[int, str], dict[str, int]]:
     """Все записи списка и поиск по имени. Живая запись побеждает убранную с тем же ФИО."""
     names: dict[int, str] = {}

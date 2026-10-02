@@ -16,6 +16,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_CONFIG = _REPO_ROOT / "config.toml"
 _DEFAULT_DB = _REPO_ROOT / "backend" / "zoschedule.db"
 _DEFAULT_ENV_FILE = _REPO_ROOT / ".env"
+_DEFAULT_ROSTER = _REPO_ROOT / "roster.txt"
 
 
 class GroupConfig(BaseModel):
@@ -253,6 +254,8 @@ class AppConfig(BaseModel):
     bot: BotConfig = Field(default_factory=BotConfig)
     web: WebConfig = Field(default_factory=WebConfig)
     db_path: Path = _DEFAULT_DB
+    roster_path: Path = _DEFAULT_ROSTER
+    """Список группы для первого запуска журнала. Вне git: в нём настоящие ФИО."""
 
 
 def load_dotenv(path: Path) -> None:
@@ -293,6 +296,9 @@ def load_config(path: Path | None = None) -> AppConfig:
     db_override = os.environ.get("ZOSCHEDULE_DB")
     if db_override:
         raw["db_path"] = Path(db_override)
+    roster_override = os.environ.get("ZOSCHEDULE_ROSTER_FILE")
+    if roster_override:
+        raw["roster_path"] = Path(roster_override)
 
     bot_raw = raw.get("bot")
     bot: dict[str, object] = dict(bot_raw) if isinstance(bot_raw, dict) else {}

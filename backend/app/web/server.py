@@ -18,7 +18,7 @@ from aiohttp import web
 from pydantic import BaseModel, ValidationError
 
 from app import moscow
-from app.attendance import journal, store
+from app.attendance import journal, roster_file, store
 from app.attendance.models import (
     JournalDay,
     MarksBody,
@@ -249,6 +249,8 @@ async def serve(config: AppConfig, sender: ReportSender) -> None:
     if not config.bot.configured:
         logger.warning("Журнал посещаемости не запущен: нет токена бота")
         return
+    with connect(config.db_path) as conn:
+        roster_file.seed(conn, config.roster_path, now=moscow.now())
     runner = web.AppRunner(build_app(config, sender), access_log=None)
     await runner.setup()
     try:
