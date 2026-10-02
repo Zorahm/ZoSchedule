@@ -21,6 +21,12 @@
     return el;
   };
 
+  /* Заменяет содержимое узла. Родной replaceChildren превращает null в текст «null», поэтому
+     пустые значения (нет подписи, нет иконки) отбрасываем здесь, а не в каждом вызове. */
+  Zo.fill = function (el, kids) {
+    el.replaceChildren.apply(el, [].concat(kids).filter(function (kid) { return kid != null && kid !== false; }));
+  };
+
   var ICONS = {
     users: '<path d="M16 19v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 17.5V19M10 11a3.2 3.2 0 1 0 0-6.4A3.2 3.2 0 0 0 10 11zm9 8v-1.5a3.5 3.5 0 0 0-2.4-3.3M14.6 4.8a3.2 3.2 0 0 1 0 6.1"/>',
     left: '<path d="M14.5 5.5 8 12l6.5 6.5"/>',

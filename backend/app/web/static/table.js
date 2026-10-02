@@ -82,9 +82,9 @@
       if (!box) return;
       var s = all.slots[pair.slot];
       var left = day.students.length - s.marked;
-      box.replaceChildren(
+      Zo.fill(box, [
         h('b', { class: s.absent ? '' : 'zero' }, s.absent || '—'),
-        left ? h('small', null, 'ещё ' + left) : null);
+        left ? h('small', null, 'ещё ' + left) : null]);
     });
     day.students.forEach(function (student) {
       var row = sheet.querySelector('tr[data-row="' + student.id + '"] .who');
