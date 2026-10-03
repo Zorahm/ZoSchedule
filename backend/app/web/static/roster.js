@@ -101,7 +101,7 @@
         h('h2', null, 'Список группы'), count),
       list,
       h('div', { class: 'row-tools' },
-        h('button', { class: 'btn ghost', onclick: addRow }, '+ Добавить'),
+        h('button', { class: 'btn ghost', onclick: addRow }, Zo.icon('plus'), 'Добавить'),
         h('button', { class: 'btn ghost', onclick: showBulk }, 'Вставить списком')),
       error,
       h('div', { class: 'bar-b' }, save));

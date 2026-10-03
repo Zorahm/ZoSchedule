@@ -55,6 +55,13 @@
         entry.state === 'open' && entry.total ? h('span', { class: 'bar' }, h('i', { class: share === 100 ? 'full' : '', style: 'width:' + share + '%' })) : null));
   }
 
+  /** «30 студентов, 4 пары» под датой, как на картинке для куратора; только когда есть что отмечать. */
+  function counts(day) {
+    if (day.state !== 'open' || !day.students.length) return null;
+    var s = day.students.length, p = day.pairs.length;
+    return [' · ', h('b', null, s + ' ' + Zo.plural(s, 'студент', 'студента', 'студентов') + ', ' + p + ' ' + Zo.plural(p, 'пара', 'пары', 'пар'))];
+  }
+
   function header(data, save, on) {
     var day = data.day;
     return h('header', { class: 'top' },
@@ -66,13 +73,13 @@
         data.day.state === 'open' && day.students.length
           ? h('button', { class: 'icon-btn', 'aria-label': 'Отправить куратору', onclick: on.send }, Zo.icon('send')) : null,
         h('button', { class: 'icon-btn', 'aria-label': 'Список группы', onclick: on.roster }, Zo.icon('users'))),
-      h('div', { class: 'title-row' },
+      h('div', { class: 'title' },
         h('h1', null, Zo.weekday(day.date)),
-        h('span', { class: 'date' }, Zo.dayLabel(day.date))),
+        h('div', { class: 'sub' }, Zo.dayLabel(day.date), counts(day))),
       h('div', { class: 'status' }, statusNodes(data, on.back)),
       h('nav', { class: 'strip', 'aria-label': 'Дни недели' },
         h('button', { class: 'arrow', 'aria-label': 'Прошлая неделя', onclick: function () { on.week(-7); } }, Zo.icon('left')),
-        data.week.map(function (entry) { return chip(entry, day.date, on.pick); }),
+        h('div', { class: 'days' }, data.week.map(function (entry) { return chip(entry, day.date, on.pick); })),
         h('button', { class: 'arrow', 'aria-label': 'Следующая неделя', onclick: function () { on.week(7); } }, Zo.icon('right'))));
   }
 
@@ -80,6 +87,7 @@
   function scope(pair, on) {
     var detail = [pair.teacher || 'преподаватель не указан на сайте', pair.room ? 'ауд. ' + pair.room : null].filter(Boolean).join(' · ');
     return h('div', { class: 'scope' },
+      h('b', { class: 'no' }, pair.number),
       h('button', { class: 'scope-text', onclick: on.open, 'aria-label': 'Подробнее о паре' },
         h('span', { class: 'k' }, pair.number + ' пара · ' + pair.start + '–' + pair.end),
         h('span', { class: 't' }, pair.title),
@@ -117,7 +125,7 @@
   function plan(day) {
     if (!day.pairs.length) return null;
     return h('ol', { class: 'plan' }, day.pairs.map(function (pair) {
-      return h('li', null, h('time', null, pair.start), h('span', null, pair.title));
+      return h('li', null, h('b', null, pair.number), h('time', null, pair.start), h('span', null, pair.title));
     }));
   }
 
@@ -143,7 +151,7 @@
     var title = denied ? 'Журнал только для старосты' : 'Не получилось загрузить';
     var text = error.code === 'expired' ? 'Сессия устарела. Закройте журнал и откройте его заново из чата с ботом.' : error.message;
     return h('div', { class: 'state', style: 'margin:0 16px' },
-      h('div', { class: 'card' }, Zo.icon(denied ? 'lock' : 'clock', 'big-i'), h('div', { class: 'big' }, title), h('p', null, text),
+      h('div', { class: 'card' }, Zo.icon(denied ? 'lock' : 'warn', 'big-i'), h('div', { class: 'big' }, title), h('p', null, text),
         denied ? null : h('button', { class: 'btn', onclick: onRetry }, 'Повторить')));
   }
 
