@@ -24,13 +24,14 @@ from aiogram.methods import Response, TelegramMethod
 from aiogram.methods.base import TelegramType
 
 from app import moscow
-from app.bot import demo, errors
+from app.bot import errors
+from app.bot.dev import demo
 from app.bot import store as bot_store
-from app.bot.renderer import PlaywrightRenderer
+from app.render.renderer import PlaywrightRenderer
 from app.bot.runner import make_bot
 from app.bot.service import BotService
 from app.config import AppConfig
-from app.models.db import connect
+from app.db import connect
 from app.snapshots import store
 from app.snapshots.service import ScheduleService
 

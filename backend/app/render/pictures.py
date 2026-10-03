@@ -9,11 +9,12 @@ from collections.abc import Callable
 from dataclasses import dataclass, replace
 
 from app import moscow
-from app.bot import templates, texts, theme
-from app.bot.renderer import Renderer
-from app.bot.view import WEEK_DAYS, DayView, Header, build_days, week_monday
+from app.render import templates, theme
+from app import texts
+from app.render.renderer import Renderer
+from app.render.view import WEEK_DAYS, DayView, Header, build_days, week_monday
 from app.config import AppConfig
-from app.models.db import connect
+from app.db import connect
 from app.snapshots import store
 
 

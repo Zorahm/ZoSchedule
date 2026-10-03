@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 from app import moscow
 from app.attendance.models import DayState, Pair
-from app.bot import texts
+from app import texts
 from app.models.domain import Lesson
 from app.snapshots import store as snapshots
 

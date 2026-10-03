@@ -7,10 +7,10 @@ from pathlib import Path
 
 from app import moscow
 from app.bot import store as bot_store
-from app.bot.simulate import copy_real_database
+from app.bot.dev.simulate import copy_real_database
 from app.config import AppConfig
 from app.bot.store import Target
-from app.models.db import connect, init_db
+from app.db import connect, init_db
 from app.snapshots import store
 from tests.fakes import Clock, save_demo
 

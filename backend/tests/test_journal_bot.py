@@ -16,7 +16,7 @@ from app.attendance.report import ReportError
 from app.bot.runner import build_dispatcher
 from app.bot.service import BotService
 from app.config import AppConfig, BotConfig, WebConfig
-from app.models.db import init_db
+from app.db import init_db
 from tests.fakes import Clock, FakeRenderer, FakeTelegram
 
 HEADMAN, OWNER, STRANGER = 7, 8, 9
@@ -128,7 +128,7 @@ async def test_a_headman_who_never_started_the_bot_is_told_to_press_start(
 async def test_a_missing_browser_is_said_plainly(
     config: AppConfig, telegram: FakeTelegram, at: Clock
 ) -> None:
-    from app.bot.renderer import RenderError
+    from app.render.renderer import RenderError
 
     class NoBrowser:
         async def render(self, html: str) -> bytes:

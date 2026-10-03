@@ -12,10 +12,11 @@ import pytest
 from pydantic import SecretStr
 
 from app import moscow
-from app.bot import demo, texts
-from app.bot.pictures import PictureBuilder
+from app.bot.dev import demo
+from app import texts
+from app.render.pictures import PictureBuilder
 from app.bot.service import BotService
-from app.bot.view import build_days
+from app.render.view import build_days
 from app.config import AppConfig, BotConfig
 from app.models.changes import Added, Cancelled, Moved, TeacherChanged, build_event
 from app.models.domain import Lesson, SnapshotMeta

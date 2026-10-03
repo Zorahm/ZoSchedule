@@ -6,10 +6,10 @@ import datetime as dt
 import re
 from dataclasses import replace
 
-from app.bot import templates
-from app.bot.view import DayView, Header, build_days
+from app.render import templates
+from app.render.view import DayView, Header, build_days
 from app.config import AppConfig
-from app.models.db import connect
+from app.db import connect
 from app.snapshots import store
 from tests.fakes import save_demo
 

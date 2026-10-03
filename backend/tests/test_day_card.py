@@ -7,11 +7,11 @@ import datetime as dt
 import pytest
 from pydantic import SecretStr
 
-from app.bot import demo
-from app.bot.pictures import PictureBuilder
-from app.bot.renderer import find_browser, prepare_page
-from app.bot.templates import TITLE_MAX_LINES, WIDTH
-from app.bot.view import kind_tone
+from app.bot.dev import demo
+from app.render.pictures import PictureBuilder
+from app.render.renderer import find_browser, prepare_page
+from app.render.styles import TITLE_MAX_LINES, WIDTH
+from app.render.view import kind_tone
 from app.config import AppConfig, BotConfig
 from app.snapshots.service import ScheduleService
 from tests.fakes import Clock, FakeRenderer

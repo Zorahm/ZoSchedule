@@ -6,10 +6,10 @@ import datetime as dt
 
 import pytest
 
-from app.bot import demo
+from app.bot.dev import demo
 from app.config import AppConfig
 from app.models.changes import Moved
-from app.models.db import connect
+from app.db import connect
 from app.parsing.curator import RoomNotice, parse_room_notice
 from app.snapshots import store
 from app.snapshots.service import ScheduleService

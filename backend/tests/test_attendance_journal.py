@@ -11,7 +11,7 @@ from app import moscow
 from app.attendance import journal, store
 from app.attendance.models import MarkChange, RosterEntry
 from app.attendance.schedule import Schedule
-from app.bot import demo
+from app.bot.dev import demo
 from app.config import AppConfig
 from app.snapshots.service import ScheduleService
 from tests.fakes import save_demo

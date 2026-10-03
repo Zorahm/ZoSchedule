@@ -12,7 +12,7 @@ from pathlib import Path
 
 from app.bot import store as bot_store
 from app.bot.store import Target
-from app.models.db import connect, init_db
+from app.db import connect, init_db
 
 # Схема снимков до появления второго источника расписания.
 _OLD_SCHEMA = """

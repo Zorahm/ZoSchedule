@@ -17,15 +17,17 @@ from aiogram.types import InputMediaPhoto
 from pydantic import SecretStr
 
 from app import moscow
-from app.bot import demo, templates, texts
+from app.render import templates
+from app.bot.dev import demo
+from app import texts
 from app.bot import store as bot_store
-from app.bot.pictures import PictureBuilder, target_monday
-from app.bot.renderer import PlaywrightRenderer, find_browser
+from app.render.pictures import PictureBuilder, target_monday
+from app.render.renderer import PlaywrightRenderer, find_browser
 from app.bot.service import BotService
-from app.bot.view import build_days
+from app.render.view import build_days
 from app.config import AppConfig, BotConfig
 from app.models.changes import Added, Cancelled, Moved, TeacherChanged
-from app.models.db import connect
+from app.db import connect
 from app.models.domain import Lesson
 from app.snapshots import store
 from app.snapshots.service import RefreshOutcome, ScheduleService
@@ -185,7 +187,7 @@ def test_long_titles_are_shortened_for_pictures(full: str, short: str) -> None:
 
 
 def test_only_the_week_picture_shortens_titles(bot_config: AppConfig) -> None:
-    from app.bot.view import Header
+    from app.render.view import Header
 
     save_demo(bot_config, TUESDAY)
     with connect(bot_config.db_path) as conn:
@@ -248,7 +250,7 @@ def test_day_template_shows_lessons_and_stream(bot_config: AppConfig) -> None:
         assert latest is not None
         lessons = store.load_lessons(conn, latest.id)
     week = build_days(lessons, latest, dt.date(2026, 9, 28), 6, group=GROUP)
-    from app.bot.view import Header
+    from app.render.view import Header
 
     html = templates.day_html(week[1], week, Header("ОККИПд-307", TUESDAY))
     assert "Вторник" in html and "Базы данных" in html

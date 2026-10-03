@@ -8,12 +8,55 @@ Telegram-бот расписания учебной группы МТИ: сни�
 ## Раскладка
 
 ```
-parser.py            парсер сайта — ВНЕШНИЙ КОНТРАКТ, не редактировать
-config.toml          группа, интервал опроса, время постов
-.env                 секреты (в git не попадает); шаблон — .env.example
-backend/             Python + SQLite: парсер-обёртка, снимки, диффы
-backend/app/bot/     Telegram-бот: картинки недели и дня, тексты изменений
+parser.py              парсер сайта — ВНЕШНИЙ КОНТРАКТ, не редактировать
+config.toml            группа, интервал опроса, время постов
+.env                   секреты (в git не попадает); шаблон — .env.example
+roster.txt             первичный список группы (в git не попадает); образец — roster.example.txt
+install.sh, start-bot.bat   установка и запуск: Linux (systemd), Windows
+docs/                  инструкции по развёртыванию (docs/vds.md)
+
+backend/
+  pyproject.toml       зависимости, pytest, pyright и mypy (strict)
+  app/
+    moscow.py          единственный источник «сейчас» (МСК)
+    config.py          config.toml + .env → pydantic-модели
+    db.py              схема SQLite, миграции, connect(); таблиц и запросов не содержит
+    texts.py           все русские строки пользователю и их форматирование
+    models/            чистые данные без ввода-вывода: domain.py (Lesson…), changes.py (события диффа)
+    parsing/           обёртка над parser.py: нормализация сырья (зачет→зачёт, время), куратор
+    snapshots/         снимки: store.py (весь SQL), diff.py, overrides.py, service.py (прогон)
+    render/            картинки: view.py (модель кадра), templates.py + styles.py (HTML/CSS),
+                       night.py, theme.py, fonts.py + assets/fonts, renderer.py (Playwright),
+                       pictures.py (снимки → готовый PNG с отпечатком)
+    bot/               Telegram: handlers, middleware, runner, errors, store (учёт сообщений),
+                       service.py — фасад; работа в context, refresh, posting, updates, reports
+    bot/dev/           демо-данные и симулятор для тестовой группы (python -m app.bot …)
+    attendance/        журнал посещаемости: models, store, schedule, journal, report, roster_file
+    web/               мини-приложение журнала: server.py (aiohttp), auth.py, static/ без сборки
+  tests/               pytest; fixtures/ — подготовленные снимки; fakes.py — поддельные Telegram и рендерер
 ```
+
+### Кто от кого зависит
+
+Зависимости идут сверху вниз, обратных нет:
+
+```
+moscow, config, db, texts, models
+  → parsing → snapshots
+  → render                (читает снимки, не знает про Telegram)
+  → attendance            (берёт расписание из snapshots, картинку — из render)
+  → bot, web              (верхний слой; друг другу не нужны, кроме runner → web)
+```
+
+- `render` и `attendance` не импортируют `bot`. Что-то общее для бота и картинок —
+  в `texts.py` или `render/`.
+- Работа бота живёт в `bot/` по частям, `BotService` их только раздаёт. Новая
+  возможность бота — новый модуль рядом с `posting.py`/`updates.py`, а не ещё сотня
+  строк в `service.py`.
+- Telegram-сообщения и учёт отправленного — `bot/store.py`; снимки и диффы —
+  `snapshots/store.py`; отметки — `attendance/store.py`. SQL живёт только в `store.py`
+  своего пакета (схема и миграции — в `db.py`). Исключения: `BEGIN`/`COMMIT` в
+  `snapshots/service.py` и `bot/dev/simulate.py`, который правит копию базы.
 
 ## Незыблемое
 

@@ -11,7 +11,7 @@ from typing import Literal
 from app import moscow
 from app.config import AppConfig
 from app.models.changes import ChangeDraft
-from app.models.db import connect, init_db
+from app.db import connect, init_db
 from app.models.domain import Lesson, SnapshotMeta, SnapshotSource
 from app.parsing.adapter import ParserFailure, run as run_parser
 from app.parsing.curator import RoomNotice

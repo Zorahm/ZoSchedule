@@ -8,10 +8,10 @@ import pytest
 from pydantic import SecretStr
 
 from app.bot import store as bot_store
-from app.bot.pictures import PictureBuilder
+from app.render.pictures import PictureBuilder
 from app.bot.service import BotService
 from app.config import AppConfig, BotConfig
-from app.models.db import connect
+from app.db import connect
 from app.snapshots.service import ScheduleService
 from tests.fakes import Clock, FakeRenderer, FakeTelegram, save_demo
 
@@ -93,7 +93,7 @@ async def test_a_full_day_cycle(
     at(MONDAY, "00:01")
     await bot.tick()
     assert telegram.calls[3:] == [("edit", monday_photo)]  # "Сегодня" now, in place
-    picture = await bot._pictures.today(MONDAY, force=True)  # pyright: ignore[reportPrivateUsage]
+    picture = await bot.pictures.today(MONDAY, force=True)
     assert picture is not None and picture.caption.startswith("📅 Сегодня · понедельник")
 
     at(MONDAY, "08:00")

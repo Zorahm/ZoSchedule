@@ -10,7 +10,7 @@ from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject, Update
 
 from app.bot import store as bot_store
-from app.models.db import connect
+from app.db import connect
 
 
 class UpdateOffset(BaseMiddleware):

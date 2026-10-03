@@ -16,7 +16,7 @@ from aiogram.types import BotCommand, BotCommandScopeChat
 
 from app.bot import errors, handlers
 from app.bot.middleware import UpdateOffset
-from app.bot.renderer import PlaywrightRenderer
+from app.render.renderer import PlaywrightRenderer
 from app.bot.service import BotService
 from app.config import AppConfig
 from app.snapshots.service import ScheduleService

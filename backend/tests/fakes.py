@@ -37,7 +37,7 @@ from aiogram.types import (
     User,
 )
 
-from app.bot import demo
+from app.bot.dev import demo
 from app.bot.runner import make_bot
 from app.config import AppConfig
 from app.snapshots.service import ScheduleService

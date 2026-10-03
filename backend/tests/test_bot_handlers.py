@@ -39,7 +39,7 @@ from app.bot.runner import build_dispatcher
 from app.bot.service import BotService
 from app.config import AppConfig, BotConfig
 from app.bot.store import Target
-from app.models.db import connect
+from app.db import connect
 from app.snapshots.service import ScheduleService
 from tests.fakes import BOT_ID, Clock, FakeRenderer, FakeTelegram, save_demo
 
