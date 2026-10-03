@@ -46,12 +46,13 @@
   function build(day, nowSlot) {
     var table = h('table', { class: 'grid' },
       h('thead', null, h('tr', null,
-        h('th', { class: 'who-h', scope: 'col' }, 'ФИО', h('b', { class: 'cnt' }, day.students.length)),
+        h('th', { class: 'who-h', scope: 'col' }, h('i', null, '№'), 'ФИО'),
         day.pairs.map(function (pair) { return head(pair, nowSlot); }))),
       h('tbody', null, day.students.map(function (student, index) {
         return h('tr', { 'data-row': student.id },
           h('th', { class: 'who', scope: 'row' },
-            h('button', { 'data-student': student.id }, h('i', null, index + 1), h('span', null, Zo.shortName(student.name)))),
+            h('button', { 'data-student': student.id }, h('i', null, index + 1),
+              h('span', { class: 'short' }, Zo.shortName(student.name)), h('span', { class: 'full' }, student.name))),
           day.pairs.map(function (pair) { return cell(student, pair); }));
       })),
       h('tfoot', null, h('tr', null,
