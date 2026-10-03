@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 from playwright.async_api import Page, async_playwright
 
-from app.bot.renderer import find_browser
+from app.render.renderer import find_browser
 from app.web import preview
 
 _JUNK = ("null", "undefined", "NaN", "[object")

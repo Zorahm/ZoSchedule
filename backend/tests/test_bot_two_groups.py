@@ -10,12 +10,12 @@ from aiogram.exceptions import TelegramForbiddenError
 from aiogram.methods import SendMessage
 from pydantic import SecretStr
 
-from app.bot import demo
+from app.bot.dev import demo
 from app.bot import store as bot_store
 from app.bot.service import BotService
 from app.bot.store import Target
 from app.config import AppConfig, BotConfig, GroupConfig, PollConfig
-from app.models.db import connect
+from app.db import connect
 from app.snapshots import store
 from app.snapshots.service import ScheduleService
 from tests.conftest import GROUP

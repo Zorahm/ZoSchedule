@@ -10,8 +10,8 @@ import datetime as dt
 import html
 
 from app.attendance.models import JournalDay, Mark, Pair, StudentRow
-from app.bot import texts
-from app.bot.fonts import font_css
+from app import texts
+from app.render.fonts import font_css
 from app.models.domain import weekday_ru
 
 class ReportError(Exception):

@@ -22,7 +22,7 @@ if str(_BACKEND_ROOT) not in sys.path:
 
 from app import moscow  # noqa: E402
 from app.config import AppConfig, GroupConfig, PollConfig  # noqa: E402
-from app.models.db import connect, init_db  # noqa: E402
+from app.db import connect, init_db  # noqa: E402
 from app.models.domain import Lesson  # noqa: E402
 from app.parsing.college import RawDay  # noqa: E402
 from app.parsing.normalize import parse_days  # noqa: E402

@@ -20,12 +20,12 @@ import sys
 from pathlib import Path
 
 from app import moscow
-from app.bot import demo, simulate
-from app.bot.renderer import PlaywrightRenderer
+from app.bot.dev import demo, simulate
+from app.render.renderer import PlaywrightRenderer
 from app.bot.runner import open_service, run_forever
-from app.bot.pictures import PictureBuilder, target_monday
+from app.render.pictures import PictureBuilder, target_monday
 from app.config import AppConfig, get_config
-from app.models.db import connect
+from app.db import connect
 from app.snapshots import store
 from app.snapshots.service import ScheduleService
 

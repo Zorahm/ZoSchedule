@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
-from app.bot import texts
+from app import texts
 from app.models.domain import Lesson, SnapshotMeta
 
 Coverage = Literal["published", "unpublished"]

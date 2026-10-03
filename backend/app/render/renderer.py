@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
-from app.bot.templates import FRAME_SELECTOR, WIDTH
+from app.render.styles import FRAME_SELECTOR, WIDTH
 
 if TYPE_CHECKING:
     from playwright.async_api import Page

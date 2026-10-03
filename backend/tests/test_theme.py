@@ -8,11 +8,12 @@ import pytest
 from pydantic import SecretStr, ValidationError
 
 from app import moscow
-from app.bot import demo, templates, theme
-from app.bot.night import NIGHT_CSS
-from app.bot.pictures import PictureBuilder
+from app.render import templates, theme
+from app.bot.dev import demo
+from app.render.night import NIGHT_CSS
+from app.render.pictures import PictureBuilder
 from app.bot.service import BotService
-from app.bot.view import DayView, Header, build_days
+from app.render.view import DayView, Header, build_days
 from app.config import AppConfig, BotConfig
 from app.models.domain import SnapshotMeta
 from app.snapshots.service import ScheduleService

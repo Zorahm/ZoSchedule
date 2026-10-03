@@ -29,13 +29,13 @@ from app.attendance.models import (
 )
 from app.attendance.report import ReportError
 from app.config import AppConfig
-from app.models.db import connect
+from app.db import connect
 from app.web.auth import AuthError, TelegramUser, verify_init_data
 
 logger = logging.getLogger(__name__)
 
 STATIC_DIR = Path(__file__).parent / "static"
-FONTS_DIR = Path(__file__).resolve().parents[1] / "bot" / "assets" / "fonts"
+FONTS_DIR = Path(__file__).resolve().parents[1] / "render" / "assets" / "fonts"
 _MAX_BODY = 256 * 1024
 
 _CONFIG = web.AppKey("config", AppConfig)
