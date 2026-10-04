@@ -41,6 +41,11 @@ NO_LESSONS = "Выходной"
 """A published day without lessons, retake-only days included: the group has no classes."""
 RETAKE_TAG = "ПЕРЕСДАЧА"
 NOT_PUBLISHED = "Ещё не опубликовано"
+# Подписи под днём в полосе недели на картинке дня: места там мало, поэтому коротко.
+STRIP_UNTIL = "до {}"
+STRIP_OFF = "выходной"
+STRIP_EXAM = "экзамен"
+STRIP_UNPUBLISHED = "нет данных"
 CHANGES_TITLE = "🔔 <b>Изменения в расписании</b>"
 
 # Telegram rejects messages over 4096 characters; keep a margin for the tags.

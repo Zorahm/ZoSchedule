@@ -6,6 +6,7 @@ import datetime as dt
 import re
 from dataclasses import replace
 
+from app import texts
 from app.render import templates
 from app.render.view import DayView, Header, build_days
 from app.config import AppConfig
@@ -79,7 +80,7 @@ def test_the_day_pictures_strip_marks_days_off_too(config: AppConfig) -> None:
     assert [chip.strip() for chip in _chips(page)] == ["", "on", "", "off", "off", ""]
 
 
-def test_the_pictured_day_stays_orange_even_when_it_is_off(config: AppConfig) -> None:
+def test_the_pictured_day_stays_black_even_when_it_is_off(config: AppConfig) -> None:
     week = _week(config)
     page = templates.day_html(week[4], week, HEADER)  # Friday, a day off
     assert _chips(page)[4].strip() == "on"
@@ -87,19 +88,54 @@ def test_the_pictured_day_stays_orange_even_when_it_is_off(config: AppConfig) ->
 
 def test_an_unpublished_day_is_not_green_in_the_strip(config: AppConfig) -> None:
     week = _week(config, published=False)
-    assert "off" not in "".join(_chips(templates.day_html(week[1], week, HEADER)))
+    page = templates.day_html(week[1], week, HEADER)
+    assert "off" not in "".join(_chips(page))
+    assert page.count(f'<div class="f">{texts.STRIP_UNPUBLISHED}</div>') == 6
+
+
+def _captions(page: str) -> list[str]:
+    return re.findall(r'<div class="f">([^<]*)</div>', page)
+
+
+def test_the_strip_says_when_each_day_ends(config: AppConfig) -> None:
+    week = _week(config)
+    page = templates.day_html(week[1], week, HEADER)
+    # Thursday has only a retake: for the group it is a day off, not "до 17:00".
+    assert _captions(page) == ["до 13:40", "до 15:20", "до 15:20", "выходной", "выходной", "до 11:40"]
+
+
+def _with_exam(week: list[DayView], index: int) -> list[DayView]:
+    day = week[index]
+    exam = replace(day.lessons[0], kind="Экзамен", tone="red", is_exam=True)
+    return [*week[:index], replace(day, lessons=(exam, *day.lessons[1:])), *week[index + 1 :]]
+
+
+def test_an_exam_day_is_marked_by_its_caption_only(config: AppConfig) -> None:
+    week = _with_exam(_week(config), 2)  # Wednesday
+    page = templates.day_html(week[1], week, HEADER)
+    assert _chips(page)[2] == " ex"  # not filled: only the caption is red
+    assert _captions(page)[2] == texts.STRIP_EXAM
+
+
+def test_the_pictured_exam_day_is_black_and_keeps_its_caption(config: AppConfig) -> None:
+    week = _with_exam(_week(config), 2)
+    page = templates.day_html(week[2], week, HEADER)
+    assert _chips(page)[2] == " on ex"
+    assert _captions(page)[2] == texts.STRIP_EXAM
+    assert page.count('<div class="card k-red exam">') == 1  # the exam card, pink
+    assert '<div class="card retake k-red">' not in page  # a retake would be a plain card
 
 
 def test_on_a_day_off_the_retake_comes_first_and_the_word_is_big(config: AppConfig) -> None:
     week = _week(config)
     page = templates.day_html(week[3], week, HEADER)  # Thursday: only a retake
-    assert page.index('class="card retake"') < page.index('class="empty off"')
+    assert page.index('class="card retake') < page.index('class="empty off"')
 
 
 def test_on_a_school_day_the_retake_still_follows_the_lessons(config: AppConfig) -> None:
     week = _week(config)
     page = templates.day_html(week[0], week, HEADER)  # Monday: lessons and a retake
-    assert page.rindex('<div class="card">') < page.index('class="card retake"')
+    assert page.rindex('<div class="card k-') < page.index('class="card retake')
 
 
 def test_not_published_does_not_get_the_big_day_off_word(config: AppConfig) -> None:
