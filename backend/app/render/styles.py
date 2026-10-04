@@ -56,16 +56,25 @@ h1{font-family:Unbounded,'Arial Black',sans-serif;font-size:96px;line-height:100
 .sub{font-size:30px;line-height:40px;color:#5c5347}
 .sub b{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:400;color:#1a1611}
 .strip{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
-.chip{display:flex;align-items:center;justify-content:center;gap:8px;height:56px;
-  border-radius:999px;border:1px solid #8a7f70;font-size:22px;font-weight:600;
-  letter-spacing:.04em;font-family:'JetBrains Mono',monospace}
-.chip span:first-child{text-transform:uppercase}
-.chip span:last-child{font-weight:400}
-.chip.on{background:#ff4d2e;border-color:#ff4d2e}
+.chip{display:flex;flex-direction:column;gap:6px;padding:10px 14px 12px;border-radius:12px;
+  border:1px solid #8a7f70;font-family:'JetBrains Mono',monospace}
+.chip .l{display:flex;justify-content:space-between;font-size:22px;line-height:26px;font-weight:600}
+.chip .l span:first-child{text-transform:uppercase}
+.chip .l span:last-child{font-weight:400}
+.chip .f{font-size:17px;line-height:20px;letter-spacing:.04em;color:#5c5347;white-space:nowrap}
 .chip.off{background:#228B22;border-color:#228B22;color:#fff}
+.chip.off .f{color:#e6f4e6}
+.chip.na{border-style:dashed;color:#8a7f70}
+.chip.na .f{color:#8a7f70}
+.chip.on{background:#1a1611;border-color:#1a1611;color:#f4efe6}
+.chip.on .f{color:#d9cfbf}
+.chip.ex .f{color:#e0442a;font-weight:700}
+.chip.on.ex .f{color:#ff4d2e}
 .list{display:flex;flex-direction:column;gap:16px;flex-grow:1}
 .card{display:grid;grid-template-columns:168px minmax(0,1fr) auto;background:#fbf8f2;
-  border:1px solid #d9cfbf;border-radius:10px;padding:24px 28px;flex-grow:1;align-items:center}
+  border:1px solid #d9cfbf;border-left:10px solid var(--dot);border-radius:10px;
+  padding:24px 28px 24px 22px;flex-grow:1;align-items:center}
+.card.exam{background:#fff1ec;border-color:#ff4d2e;border-left-color:var(--dot)}
 .time{display:flex;flex-direction:column;gap:6px;padding-right:24px;
   border-right:1px solid #d9cfbf;align-self:stretch;justify-content:center;
   font-family:'JetBrains Mono',monospace}
@@ -77,18 +86,14 @@ h1{font-family:Unbounded,'Arial Black',sans-serif;font-size:96px;line-height:100
   text-transform:uppercase;color:#5c5347}
 .tag{font-size:18px;line-height:20px;padding:3px 10px;border:1px solid #8a7f70;
   border-radius:4px;color:#1a1611}
-.badge{font-family:'JetBrains Mono',monospace;font-size:18px;line-height:20px;font-weight:600;
-  letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;border-radius:4px}
-.badge.blue{background:#d9e6fa;color:#1d3f75}
-.badge.green{background:#d8ecd5;color:#21502a}
-.badge.red{background:#f8d2ca;color:#8c2313}
-.badge.gray{background:#ece5d8;color:#5c5347}
+.badge{font-family:'JetBrains Mono',monospace;font-size:18px;line-height:20px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--dot)}
 .time .pn{margin-top:10px;font-size:18px;line-height:22px;letter-spacing:.08em;
   text-transform:uppercase;color:#5c5347}
-.place{display:flex;flex-direction:column;gap:4px;padding-left:28px;width:238px;
-  border-left:1px solid #d9cfbf;align-self:stretch;justify-content:center}
-.place .lbl,.place .bld{font-size:20px;line-height:26px;color:#5c5347}
-.place .num{font-size:44px;line-height:48px;font-weight:700;overflow-wrap:anywhere}
+.place{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  width:190px;padding:14px 8px;border-radius:12px;background:#f1ebe0;text-align:center}
+.place .lbl,.place .bld{font-size:18px;line-height:22px;color:#5c5347}
+.place .num{font-size:50px;line-height:54px;font-weight:700;overflow-wrap:anywhere}
 .tag.stream{border-style:dashed}
 .legend{display:flex;flex-direction:column;gap:8px;font-size:22px;line-height:28px;
   color:#5c5347}
@@ -135,7 +140,7 @@ h1{font-family:Unbounded,'Arial Black',sans-serif;font-size:96px;line-height:100
 .row.off .dat{color:#e6f4e6}
 .none{font-size:24px;line-height:30px;color:#5c5347}
 .tag.retake{background:#ff4d2e;border-color:#ff4d2e}
-.card.retake{flex-grow:0;background:#fff1ec;border-color:#ff4d2e}
+.card.retake{flex-grow:0}
 .card.retake .title{font-size:24px;line-height:32px}
 .ln.retake{grid-template-columns:84px auto minmax(0,1fr) auto;gap:12px;align-items:center;
   background:#fde9e3;border-radius:10px;padding:8px 14px;margin:0 -14px}

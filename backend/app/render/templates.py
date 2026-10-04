@@ -80,8 +80,9 @@ def _card(lesson: LessonView) -> str:
         if lesson.stream
         else ""
     )
+    exam = " exam" if lesson.is_exam else ""
     return (
-        '<div class="card">'
+        f'<div class="card k-{lesson.tone}{exam}">'
         f'<div class="time"><div class="s">{lesson.start}</div><div class="e">{lesson.end}</div>'
         f'<div class="pn">{lesson.number} пара</div></div>'
         '<div class="body">'
@@ -96,20 +97,35 @@ def _is_day_off(day: DayView) -> bool:
     return day.coverage == "published" and not day.lessons
 
 
-def _chip_class(day: DayView, active: dt.date) -> str:
-    # The pictured day stays orange even when it is a day off: the strip says which day this is.
+def _chip_state(day: DayView, active: dt.date) -> tuple[str, str]:
+    """Class and caption of a day in the strip.
+
+    The pictured day is black whatever it is: the strip says which day this is. An exam
+    keeps its red caption there too, so it is not lost on the day itself."""
+    exam = any(lesson.is_exam for lesson in day.lessons)
+    if day.coverage == "unpublished":
+        state, caption = " na", texts.STRIP_UNPUBLISHED
+    elif exam:
+        state, caption = " ex", texts.STRIP_EXAM
+    elif day.lessons:
+        state, caption = "", texts.STRIP_UNTIL.format(max(lesson.end for lesson in day.lessons))
+    else:
+        state, caption = " off", texts.STRIP_OFF
     if day.date == active:
-        return " on"
-    return " off" if _is_day_off(day) else ""
+        state = " on" + (" ex" if exam else "")
+    return state, caption
 
 
 def _strip(days: Sequence[DayView], active: dt.date) -> str:
-    chips = "".join(
-        f'<div class="chip{_chip_class(day, active)}">'
-        f"<span>{texts.WEEKDAYS_SHORT[day.date.weekday()]}</span><span>{day.date.day}</span></div>"
-        for day in days
-    )
-    return f'<div class="strip">{chips}</div>'
+    chips: list[str] = []
+    for day in days:
+        state, caption = _chip_state(day, active)
+        chips.append(
+            f'<div class="chip{state}"><div class="l">'
+            f"<span>{texts.WEEKDAYS_SHORT[day.date.weekday()]}</span><span>{day.date.day}</span></div>"
+            f'<div class="f">{caption}</div></div>'
+        )
+    return f'<div class="strip">{"".join(chips)}</div>'
 
 
 def _empty_label(day: DayView) -> str:
@@ -124,7 +140,7 @@ def _day_empty(day: DayView) -> str:
 
 def _retake_card(retake: RetakeView) -> str:
     return (
-        '<div class="card retake">'
+        '<div class="card retake k-red">'
         f'<div class="time"><div class="s">{retake.start}</div><div class="e">{retake.end}</div></div>'
         '<div class="body">'
         f'<div class="tags"><span class="badge red">{_esc(texts.kind_label(RETAKE_KIND))}</span></div>'

@@ -13,19 +13,24 @@ _RULES = """
 .pill{border-color:#3a4256;color:#eef1f7;background:#151a23}
 h1{color:#fff;letter-spacing:-.03em}
 .chip{border-color:#2b3243;color:#aab2c3;background:#141922}
-.chip.on{background:#c6ff3d;border-color:#c6ff3d;color:#0e1117}
+.chip .f{color:#8d96a8}
 .chip.off{background:#17382a;border-color:#2f8a5f;color:#7be0a0}
+.chip.off .f{color:#7be0a0}
+.chip.na,.chip.na .f{background:none;color:#5d6578}
+.chip.on{background:#eef1f7;border-color:#eef1f7;color:#0e1117}
+.chip.on .f{color:#0e1117}
+.chip.ex .f{color:#ff6a4d}
+.chip.on.ex .f{color:#e0442a}
 .card,.row,.empty{background:#161b25;border-color:#252c3b}
 .empty.off{color:#7be0a0}
-.time,.place,.who,.foot{border-color:#252c3b}
+.time,.who,.foot{border-color:#252c3b}
+.card{border-left-color:var(--dot)}
+.place{background:#1f2533}
+.place .num{color:#eef1f7}
 .tag{border-color:#46506a}
-.badge.blue{background:#1c2c4e;color:#9bbcff}
-.badge.green{background:#16372a;color:#86e5a8}
-.badge.red{background:#4a1f18;color:#ff9d88}
-.badge.gray{background:#252b38;color:#a0a9bb}
 .k-blue{--dot:#6b9bff}.k-green{--dot:#5fd48a}.k-red{--dot:#ff6a4d}.k-gray{--dot:#7a8397}
 .tag.retake{background:#ff6a4d;border-color:#ff6a4d;color:#1a0b08}
-.card.retake{background:#2a1713;border-color:#ff6a4d}
+.card.exam{background:#2a1713;border-color:#ff6a4d;border-left-color:var(--dot)}
 .ln.retake{background:#2a1713}
 .ln.retake .t,.ln.exam .t{color:#ff8a70}
 .row.off .wd{background:#17382a;border:1px solid #2f8a5f}
