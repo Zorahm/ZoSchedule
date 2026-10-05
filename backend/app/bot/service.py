@@ -243,9 +243,10 @@ class BotService:
 
         if now.time() >= bot.today_at:
             await self._guarded(f"cleanup:{chat}", lambda: self.cleanup(now.date(), target=target))
-        await self._guarded(f"today:{chat}", lambda: self._poster.post_today_when_due(target))
-        await self._guarded(f"finished:{chat}", lambda: self.retire_finished_days(target=target))
+        # On Sunday with `day_ahead` both are due at once: the week goes first, Monday's picture under it.
         if now.weekday() == 6 and now.time() >= bot.week_at:
             await self._guarded(f"week:{chat}", lambda: self.post_week(target=target))
+        await self._guarded(f"today:{chat}", lambda: self._poster.post_today_when_due(target))
+        await self._guarded(f"finished:{chat}", lambda: self.retire_finished_days(target=target))
         await self._guarded(f"changes:{chat}", lambda: self.announce_changes(target=target))
         await self._guarded(f"sync:{chat}", lambda: self.sync_pictures(target=target))

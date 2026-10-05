@@ -86,9 +86,9 @@ async def test_a_full_day_cycle(
     at(SUNDAY_BEFORE, "07:00")  # no lessons on Sunday: Monday goes out at today_at
     save_demo(ahead_config, SUNDAY_BEFORE)
     await bot.tick()
-    assert telegram.kinds() == ["photo", "photo", "pin"]  # Monday, then the week
-    monday_photo = telegram.calls[0][1]
-    assert telegram.captions[0].startswith("📅 Завтра · понедельник")
+    assert telegram.kinds() == ["photo", "pin", "photo"]  # the week, then Monday
+    monday_photo = telegram.calls[2][1]
+    assert telegram.captions[1].startswith("📅 Завтра · понедельник")
 
     at(MONDAY, "00:01")
     await bot.tick()
