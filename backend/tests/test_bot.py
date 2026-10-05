@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError, TelegramNetworkError
-from aiogram.methods import DeleteMessage, EditMessageMedia, SendPhoto
+from aiogram.methods import DeleteMessage, EditMessageMedia, SendPhoto, UnpinChatMessage
 from aiogram.types import InputMediaPhoto
 from pydantic import SecretStr
 
@@ -285,6 +285,29 @@ async def test_new_week_replaces_the_old_one(
     await bot.post_week()
 
     assert ("unpin", first) in telegram.calls and ("delete", first) in telegram.calls
+    with connect(bot_config.db_path) as conn:
+        remaining = bot_store.all_of_kind(conn, chat_id=CHAT, kind="week")
+    assert [m.day for m in remaining] == [dt.date(2026, 10, 5)]
+
+
+async def test_old_week_is_deleted_even_if_unpin_is_refused(
+    bot: BotService, bot_config: AppConfig, telegram: FakeTelegram, at: Clock
+) -> None:
+    at(SUNDAY)
+    save_demo(bot_config, SUNDAY)
+    await bot.post_week()
+    first = telegram.calls[0][1]
+
+    # The bot may have the right to delete but not to pin: the old week must still go.
+    refused = TelegramBadRequest(
+        UnpinChatMessage(chat_id=CHAT, message_id=first),
+        "Bad Request: not enough rights to manage pinned messages in the chat",
+    )
+    telegram.fail(UnpinChatMessage, refused)
+    at(NEXT_SUNDAY)
+    await bot.post_week()
+
+    assert ("delete", first) in telegram.calls
     with connect(bot_config.db_path) as conn:
         remaining = bot_store.all_of_kind(conn, chat_id=CHAT, kind="week")
     assert [m.day for m in remaining] == [dt.date(2026, 10, 5)]
@@ -667,6 +690,16 @@ async def test_tick_posts_the_week_on_sunday_only(
     save_demo(bot_config, SUNDAY)
     await bot.tick()
     assert telegram.kinds() == ["photo", "pin"]  # the week; Sunday has no "today"
+
+
+async def test_sunday_week_goes_before_mondays_day(
+    bot: BotService, bot_config: AppConfig, telegram: FakeTelegram, at: Clock
+) -> None:
+    bot_config.bot.day_ahead = True
+    at(SUNDAY, "07:00")
+    save_demo(bot_config, SUNDAY)
+    await bot.tick()
+    assert telegram.kinds() == ["photo", "pin", "photo"]  # the week, then Monday
 
 
 class FakeSchedule:
