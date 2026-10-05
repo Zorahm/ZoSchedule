@@ -202,7 +202,8 @@ def test_only_the_week_picture_shortens_titles(bot_config: AppConfig) -> None:
     day_page = templates.day_html(week[1], week, header)  # Tuesday has the language lesson
 
     assert long_title not in week_page and ">Иностранный язык<" in week_page
-    assert long_title in day_page  # the day picture keeps the full name
+    # the day picture keeps the full name (short words glued to the next with nbsp)
+    assert long_title.replace("в ", "в ") in day_page
 
 
 def test_change_texts_keep_the_full_title() -> None:
