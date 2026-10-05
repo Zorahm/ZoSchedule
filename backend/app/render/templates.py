@@ -48,11 +48,17 @@ def _footer(header: Header) -> str:
     )
 
 
+def _glue_short_words(title: str) -> str:
+    """A one- or two-letter word ("и", "в", "по") stays with the next one instead of
+    dangling at the end of a line."""
+    return re.sub(r"(?<!\w)(\w{1,2}) (?=\w)", "\\1\u00a0", title)
+
+
 def _title(title: str) -> str:
     """The card title; its short form rides along only when there is one."""
     short = texts.short_title(title)
     attr = f' data-short="{_esc(short)}"' if short and short != title else ""
-    return f'<div class="title"{attr}>{_esc(title)}</div>'
+    return f'<div class="title"{attr}>{_esc(_glue_short_words(title))}</div>'
 
 
 def _meta(teacher: str | None) -> str:

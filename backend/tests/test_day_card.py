@@ -133,7 +133,7 @@ async def test_a_title_carries_its_short_form_only_when_it_has_one(
     # The full title is what shows; the short one waits in the attribute for a card that is too small.
     assert (
         '<div class="title" data-short="Иностранный язык">'
-        "Иностранный язык в профессиональной деятельности</div>"
+        "Иностранный язык в профессиональной деятельности</div>"
     ) in body
     assert '<div class="title">Математический анализ</div>' in body  # nothing to shorten
 

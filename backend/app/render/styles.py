@@ -80,7 +80,7 @@ h1{font-family:Unbounded,'Arial Black',sans-serif;font-size:96px;line-height:100
   font-family:'JetBrains Mono',monospace}
 .time .s{font-size:36px;line-height:40px;font-weight:600}
 .time .e{font-size:24px;line-height:28px;color:#5c5347}
-.body{display:flex;flex-direction:column;gap:10px;padding-left:28px;min-width:0}
+.body{display:flex;flex-direction:column;gap:10px;padding:0 32px 0 24px;min-width:0}
 .tags{display:flex;align-items:center;gap:12px;font-family:'JetBrains Mono',monospace;
   font-size:20px;line-height:24px;font-weight:600;letter-spacing:.08em;
   text-transform:uppercase;color:#5c5347}
@@ -91,15 +91,15 @@ h1{font-family:Unbounded,'Arial Black',sans-serif;font-size:96px;line-height:100
 .time .pn{margin-top:10px;font-size:18px;line-height:22px;letter-spacing:.08em;
   text-transform:uppercase;color:#5c5347}
 .place{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  width:190px;padding:14px 8px;border-radius:12px;background:#f1ebe0;text-align:center}
+  width:172px;padding:14px 8px;border-radius:12px;background:#f1ebe0;text-align:center}
 .place .lbl,.place .bld{font-size:18px;line-height:22px;color:#5c5347}
 .place .num{font-size:50px;line-height:54px;font-weight:700;overflow-wrap:anywhere}
 .tag.stream{border-style:dashed}
 .legend{display:flex;flex-direction:column;gap:8px;font-size:22px;line-height:28px;
   color:#5c5347}
 .legend .tag{margin-right:10px;font-family:'JetBrains Mono',monospace;font-weight:600}
-.title{font-family:Unbounded,'Arial Black',sans-serif;font-size:27px;line-height:34px;
-  font-weight:600}
+.title{font-family:Unbounded,'Arial Black',sans-serif;font-size:25px;line-height:32px;
+  font-weight:600;text-wrap:balance;overflow-wrap:break-word}
 .meta{font-size:24px;line-height:30px;color:#5c5347}
 .meta.unknown{font-style:italic}
 .empty{flex-grow:1;display:flex;align-items:center;justify-content:center;
