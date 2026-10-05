@@ -75,10 +75,7 @@ class BotContext:
         """Deletes a message and forgets it. Keeps the record only if Telegram was unreachable."""
         try:
             if unpin:
-                await errors.tolerate(
-                    self.bot.unpin_chat_message(chat_id=target.chat, message_id=message.message_id),
-                    errors.NOT_PINNED,
-                )
+                await self._unpin(target, message)
             await errors.tolerate(
                 self.bot.delete_message(chat_id=target.chat, message_id=message.message_id),
                 errors.ALREADY_GONE,
@@ -90,3 +87,19 @@ class BotContext:
             logger.warning("Не удалось удалить сообщение %d: %s", message.message_id, error)
         with connect(self.config.db_path) as conn:
             bot_store.forget(conn, message.id)
+
+    async def _unpin(self, target: Target, message: bot_store.PostedMessage) -> None:
+        """Best effort: a refused unpin (no "pin messages" right) must not keep the message alive.
+
+        Deleting a pinned message unpins it anyway. A transient failure still propagates,
+        so the whole retire is retried later.
+        """
+        try:
+            await errors.tolerate(
+                self.bot.unpin_chat_message(chat_id=target.chat, message_id=message.message_id),
+                errors.NOT_PINNED,
+            )
+        except errors.TELEGRAM_ERRORS as error:
+            if errors.is_transient(error):
+                raise
+            logger.warning("Не удалось открепить сообщение %d: %s", message.message_id, error)
