@@ -9,6 +9,7 @@ Meant for trying it on a scratch database and a test chat:
     python -m app.bot post-week
     python -m app.bot post-today
     python -m app.bot demo-change   (then `announce` or `run`)
+    python -m app.bot delete --all  (or --kind week|today|changes, or --message-id N)
 """
 
 from __future__ import annotations
@@ -20,9 +21,11 @@ import sys
 from pathlib import Path
 
 from app import moscow
+from app.bot import errors
 from app.bot.dev import demo, simulate
 from app.render.renderer import PlaywrightRenderer
 from app.bot.runner import open_service, run_forever
+from app.bot.service import BotService
 from app.render.pictures import PictureBuilder, target_monday
 from app.config import AppConfig, get_config
 from app.db import connect
@@ -81,6 +84,25 @@ def _seed(config: AppConfig, *, changed: bool) -> None:
         print("Демо-расписание сохранено (эта неделя и следующая).")
 
 
+async def _delete(bot: BotService, args: argparse.Namespace) -> None:
+    targets = bot.load_targets()
+    if args.chat is not None:
+        targets = [target for target in targets if target.chat == args.chat]
+        if not targets:
+            sys.exit(f"Бот не пишет в чат {args.chat}.")
+    try:
+        if args.message_id is not None:
+            if len(targets) != 1:
+                sys.exit("Чатов несколько: укажите, в каком удалять, через --chat.")
+            await bot.remove_message(targets[0].chat, args.message_id)
+            print(f"Удалено сообщение {args.message_id}")
+        else:
+            count = sum([await bot.remove_posts(target, kind=args.kind) for target in targets])
+            print(f"Удалено сообщений: {count}")
+    except errors.TELEGRAM_ERRORS as error:
+        sys.exit(f"Telegram не дал удалить: {error}")
+
+
 async def _run(args: argparse.Namespace) -> None:
     config = get_config()
     command: str = args.command
@@ -110,6 +132,9 @@ async def _run(args: argparse.Namespace) -> None:
         async with open_service(config) as bot:
             if not bot.load_targets():
                 sys.exit("Нет чата: напишите /go в группе или задайте ZOSCHEDULE_BOT_CHAT_ID.")
+            if command == "delete":
+                await _delete(bot, args)
+                return
             await bot.refresh(force=True)  # a manual command always works on fresh data
             if command == "post-week":
                 print("Отправлено" if await bot.post_week(force=args.force) else "Пропущено")
@@ -135,6 +160,12 @@ def main() -> None:
     for name in ("post-week", "post-today"):
         post = sub.add_parser(name, help="отправить сейчас")
         post.add_argument("--force", action="store_true", help="даже если уже отправлено")
+    delete = sub.add_parser("delete", help="удалить сообщения бота в чате")
+    what = delete.add_mutually_exclusive_group(required=True)
+    what.add_argument("--all", action="store_true", help="все картинки и тексты, что бот ведёт")
+    what.add_argument("--kind", choices=("week", "today", "changes"), help="только этого вида")
+    what.add_argument("--message-id", type=int, help="одно сообщение по номеру (любое от бота)")
+    delete.add_argument("--chat", help="только в этом чате (по умолчанию во всех)")
     sub.add_parser("announce", help="объявить новые изменения текстом")
     sub.add_parser("sync", help="перерисовать устаревшие картинки")
     sub.add_parser("run", help="рабочий цикл бота")

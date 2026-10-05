@@ -84,7 +84,10 @@ CREATE TABLE IF NOT EXISTS bot_messages (
     -- Отпечаток пар, которые нарисованы на картинке. Расходится с текущим —
     -- картинку надо перерисовать. Дифф для этого не годится: он не видит, что
     -- расписание на субботу опубликовали позже воскресной картинки.
-    fingerprint TEXT
+    fingerprint TEXT,
+    -- Удалено вручную (/del, `python -m app.bot delete`). Строка остаётся, чтобы
+    -- бот не отправил удалённое заново; утром или с новой неделей она уходит.
+    removed INTEGER NOT NULL DEFAULT 0 CHECK (removed IN (0, 1))
 );
 
 CREATE INDEX IF NOT EXISTS idx_bot_messages_kind_day
@@ -167,6 +170,12 @@ _ADDED_COLUMNS: tuple[tuple[str, str, str], ...] = (
         "ALTER TABLE snapshots ADD COLUMN source TEXT NOT NULL DEFAULT 'site'",
     ),
     ("lessons", "stream", "ALTER TABLE lessons ADD COLUMN stream TEXT NOT NULL DEFAULT '[]'"),
+    (
+        "bot_messages",
+        "removed",
+        "ALTER TABLE bot_messages ADD COLUMN removed INTEGER NOT NULL DEFAULT 0"
+        " CHECK (removed IN (0, 1))",
+    ),
 )
 
 

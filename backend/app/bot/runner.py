@@ -74,6 +74,7 @@ async def _on_startup(bot: Bot, service: BotService) -> None:
             [
                 BotCommand(command="go", description="Запустить бота в этом чате"),
                 BotCommand(command="stop", description="Перестать писать в этот чат"),
+                BotCommand(command="del", description="Удалить сообщение бота (ответом на него)"),
             ]
         )
     except errors.TELEGRAM_ERRORS as error:

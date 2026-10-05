@@ -29,6 +29,8 @@ class PostedMessage:
     day: dt.date
     message_id: int
     fingerprint: str | None
+    removed: bool
+    """Taken down by hand: the row only remembers that, so the cycle does not post it again."""
 
 
 def _row(row: sqlite3.Row) -> PostedMessage:
@@ -41,6 +43,7 @@ def _row(row: sqlite3.Row) -> PostedMessage:
         day=dt.date.fromisoformat(str(row["day"])),
         message_id=int(row["message_id"]),
         fingerprint=None if row["fingerprint"] is None else str(row["fingerprint"]),
+        removed=bool(row["removed"]),
     )
 
 
@@ -65,6 +68,7 @@ def set_fingerprint(conn: sqlite3.Connection, record_id: int, fingerprint: str) 
 
 
 def find(conn: sqlite3.Connection, *, chat_id: str, kind: Kind, day: dt.date) -> list[PostedMessage]:
+    """Includes the ones removed by hand: "was it posted?" is true for them too."""
     rows = conn.execute(
         "SELECT * FROM bot_messages WHERE chat_id = ? AND kind = ? AND day = ? ORDER BY id",
         (chat_id, kind, day.isoformat()),
@@ -72,12 +76,26 @@ def find(conn: sqlite3.Connection, *, chat_id: str, kind: Kind, day: dt.date) ->
     return [_row(row) for row in rows]
 
 
-def all_of_kind(conn: sqlite3.Connection, *, chat_id: str, kind: Kind) -> list[PostedMessage]:
+def all_of_kind(
+    conn: sqlite3.Connection, *, chat_id: str, kind: Kind, include_removed: bool = False
+) -> list[PostedMessage]:
+    """What is up in the chat. `include_removed` adds the by-hand deletions, for the tidying."""
     rows = conn.execute(
         "SELECT * FROM bot_messages WHERE chat_id = ? AND kind = ? ORDER BY id",
         (chat_id, kind),
     ).fetchall()
-    return [_row(row) for row in rows]
+    return [message for message in map(_row, rows) if include_removed or not message.removed]
+
+
+def mark_removed(conn: sqlite3.Connection, *, chat_id: str, message_id: int) -> bool:
+    """Notes that the message was deleted by hand. False if the ledger never knew it."""
+    return (
+        conn.execute(
+            "UPDATE bot_messages SET removed = 1 WHERE chat_id = ? AND message_id = ?",
+            (chat_id, message_id),
+        ).rowcount
+        > 0
+    )
 
 
 def forget(conn: sqlite3.Connection, record_id: int) -> None:

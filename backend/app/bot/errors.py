@@ -26,6 +26,8 @@ TELEGRAM_ERRORS = (TelegramAPIError, ClientDecodeError, *PROXY_ERRORS)
 
 NOT_MODIFIED = ("message is not modified",)
 ALREADY_GONE = ("not found", "can't be deleted")
+NOT_FOUND = ("not found",)
+"""For a deletion by hand: "can't be deleted" must be told to the person, not taken for success."""
 NOT_PINNED = ("not found", "not modified")
 MESSAGE_LOST = ("message to edit not found", "message can't be edited")
 

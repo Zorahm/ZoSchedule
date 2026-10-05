@@ -83,6 +83,32 @@ async def stop(message: Message, service: BotService) -> None:
         await message.answer("Сюда я и не пишу. Начать: /go.", disable_notification=True)
 
 
+async def delete_reply(message: Message, service: BotService, bot: Bot) -> None:
+    """/del as a reply to a message of the bot: the bot deletes it, and the command with it.
+
+    Works on any message the bot wrote, not only the pictures it keeps track of.
+    """
+    if not _is_trusted(message, service):
+        return
+    replied = message.reply_to_message
+    if replied is None or replied.from_user is None or replied.from_user.id != bot.id:
+        await message.answer(
+            "Ответьте командой /del на сообщение бота, которое надо удалить.",
+            disable_notification=True,
+        )
+        return
+    try:
+        await service.remove_message(str(message.chat.id), replied.message_id)
+    except errors.TELEGRAM_ERRORS as error:
+        logger.warning("Не удалось удалить сообщение %d по /del: %s", replied.message_id, error)
+        await message.answer(f"Не вышло удалить: {error}", disable_notification=True)
+        return
+    try:
+        await message.delete()
+    except errors.TELEGRAM_ERRORS:
+        pass  # no delete right: leaving the command in the chat is harmless
+
+
 async def open_journal(message: Message, service: BotService) -> None:
     """/start and /attendance in a private chat: a button that opens the attendance journal.
 
@@ -205,6 +231,7 @@ def build_router() -> Router:
     router.message.register(go_outside_a_group, Command("go", ignore_case=True), ~_IN_GROUP)
     router.message.register(go, Command("go", ignore_case=True), _IN_GROUP)
     router.message.register(stop, Command("stop", ignore_case=True), _IN_GROUP)
+    router.message.register(delete_reply, Command("del", ignore_case=True), _IN_GROUP)
     router.message.register(
         open_journal, Command("start", "attendance", ignore_case=True), F.chat.type == "private"
     )

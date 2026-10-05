@@ -33,8 +33,9 @@ from app.bot import errors
 from app.bot.context import BotContext
 from app.bot.posting import Poster
 from app.bot.refresh import Refresher, SnapshotRefresher
+from app.bot.removal import Remover
 from app.bot.reports import ReportSender
-from app.bot.store import Target
+from app.bot.store import Kind, Target
 from app.bot.updates import Updater
 from app.config import AppConfig
 from app.parsing.curator import RoomNotice
@@ -70,6 +71,7 @@ class BotService:
         self._refresher = SnapshotRefresher(config, schedule)
         self._poster = Poster(self._ctx, self._refresher)
         self._updater = Updater(self._ctx)
+        self._remover = Remover(self._ctx)
         self._reports = ReportSender(self._ctx)
         self._retry_at: dict[str, dt.datetime] = {}
 
@@ -191,6 +193,12 @@ class BotService:
 
     async def sync_pictures(self, *, target: Target | None = None) -> int:
         return await self._updater.sync_pictures(target=target)
+
+    async def remove_message(self, chat_id: str, message_id: int) -> None:
+        await self._remover.remove_message(chat_id, message_id)
+
+    async def remove_posts(self, target: Target | None = None, *, kind: Kind | None = None) -> int:
+        return await self._remover.remove_posts(target, kind=kind)
 
     async def go(self, chat_id: str, thread_id: int | None) -> str | None:
         """/go: add this chat, post the week there now, then the nearest day. None on success.

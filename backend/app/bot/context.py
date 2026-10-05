@@ -74,12 +74,13 @@ class BotContext:
     ) -> None:
         """Deletes a message and forgets it. Keeps the record only if Telegram was unreachable."""
         try:
-            if unpin:
-                await self._unpin(target, message)
-            await errors.tolerate(
-                self.bot.delete_message(chat_id=target.chat, message_id=message.message_id),
-                errors.ALREADY_GONE,
-            )
+            if not message.removed:  # taken down by hand: only the record is left
+                if unpin:
+                    await self._unpin(target, message)
+                await errors.tolerate(
+                    self.bot.delete_message(chat_id=target.chat, message_id=message.message_id),
+                    errors.ALREADY_GONE,
+                )
         except errors.TELEGRAM_ERRORS as error:
             if errors.is_transient(error):
                 logger.warning("Telegram недоступен, удалю позже: %s", error)

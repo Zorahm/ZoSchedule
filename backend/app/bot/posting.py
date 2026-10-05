@@ -36,7 +36,9 @@ class Poster:
         with connect(ctx.config.db_path) as conn:
             if bot_store.find(conn, chat_id=target.chat, kind="week", day=monday) and not force:
                 return False
-            previous = bot_store.all_of_kind(conn, chat_id=target.chat, kind="week")
+            previous = bot_store.all_of_kind(
+                conn, chat_id=target.chat, kind="week", include_removed=True
+            )
 
         await self._refresher.refresh_once(f"week:{monday}")
         picture = await ctx.pictures.week(monday)
@@ -193,7 +195,9 @@ class Poster:
                 stale = [
                     message
                     for kind in kinds
-                    for message in bot_store.all_of_kind(conn, chat_id=chat.chat, kind=kind)
+                    for message in bot_store.all_of_kind(
+                        conn, chat_id=chat.chat, kind=kind, include_removed=True
+                    )
                     if message.day < today
                 ]
             for message in stale:
