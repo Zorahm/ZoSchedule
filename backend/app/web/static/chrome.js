@@ -106,7 +106,7 @@
     return h('footer', { class: 'bar-b' },
       h('div', { class: 'prog' },
         h('div', { class: 'num' }, stats.marked, h('span', null, ' из ' + stats.total)),
-        h('div', { class: 'track' }, h('i', { class: share === 100 ? 'full' : '', style: 'width:' + share + '%' })),
+        h('div', { class: 'track' }, h('i', { class: share === 100 ? 'full' : '', style: 'transform:scaleX(' + share / 100 + ')' })),
         h('div', { class: 'sub' }, sub)),
       left ? h('div', { class: 'seg-group', role: 'radiogroup', 'aria-label': 'Чем заполнить остальных' },
         seg('present', 'П', 'Присутствуют'), seg('absent', 'Н', 'Отсутствуют')) : null,

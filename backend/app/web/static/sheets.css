@@ -62,14 +62,15 @@
 .screen { padding: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px); }
 .roster-list { flex: 1; min-height: 0; overflow: auto; margin: 0 8px; border: 1px solid var(--frame); border-radius: var(--r); background: var(--surface); }
 .rrow:nth-child(even) { background: var(--zebra); }
-.rrow { display: grid; grid-template-columns: 28px minmax(0, 1fr) 40px; align-items: center; border-bottom: 1px solid var(--line); padding-left: 12px; }
+.rrow { display: grid; grid-template-columns: 28px minmax(0, 1fr) 44px;align-items: center; border-bottom: 1px solid var(--line); padding-left: 12px; }
 .rrow:last-child { border-bottom: 0; }
 .rrow i { font: 500 11px/1 var(--f-mono); font-style: normal; color: var(--line-strong); }
 .rrow input { width: 100%; height: 50px; border: 0; background: transparent; color: var(--ink); font: 500 15px/1 var(--f-body); padding: 0 8px 0 0; }
 .rrow input::placeholder { color: var(--muted); font-weight: 400; }
 .rrow input:focus-visible { outline: none; }
 .rrow:focus-within { background: var(--pick); }
-.rrow .del { height: 50px; display: grid; place-items: center; color: var(--muted); }
+/* Минимум 44px по ширине: крестик 18px, но палец попадает в зону побольше. */
+.rrow .del { height: 50px; min-width: 44px; display: grid; place-items: center; color: var(--muted); }
 .rrow .del svg { width: 18px; height: 18px; }
 .rrow .del:active { color: var(--stale); }
 .row-tools { display: flex; gap: 8px; padding: 10px 8px 0; }
@@ -86,7 +87,9 @@
 
 /* ---------- отправка куратору ---------- */
 .drawer .lead { color: var(--muted); font-size: 15px; max-width: 40ch; }
-.drawer .warn { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--absent-bg); border-left-width: 4px; font-size: 14px; }
+/* Ровная рамка и подложка вместо боковой полосы: полоса выглядит как шаблон, а не как предупреждение. */
+.drawer .warn { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--absent-bg);
+  background: color-mix(in srgb, var(--absent-bg) 12%, var(--surface)); color: var(--ink); font-size: 14px; }
 .drawer .err { padding: 0; }
 .btn.wide { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 9px; }
 .btn.wide svg, .btn.send svg { width: 20px; height: 20px; flex: none; }

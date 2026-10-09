@@ -63,8 +63,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
 .save[data-s="offline"] { color: var(--stale); }
 .save[data-s="offline"]::before { background: var(--absent-bg); }
 @keyframes pulse { 50% { opacity: .25; } }
-.icon-btn { flex: none; width: 38px; height: 38px; border-radius: var(--r); border: 1px solid var(--line-strong);
+.icon-btn { position: relative; flex: none; width: 38px; height: 38px; border-radius: var(--r); border: 1px solid var(--line-strong);
   display: grid; place-items: center; color: var(--ink); background: var(--surface); }
+/* Видимая кнопка остаётся прежней; касание расширяем невидимой зоной до 44px. */
+.icon-btn::after { content: ""; position: absolute; inset: -3px; }
 .icon-btn svg { width: 20px; height: 20px; }
 .icon-btn:active { background: var(--line); }
 h1 { font: 700 clamp(28px, 9vw, 40px)/1 var(--f-display); letter-spacing: -.02em; overflow-wrap: anywhere; }
@@ -77,7 +79,8 @@ h1 { font: 700 clamp(28px, 9vw, 40px)/1 var(--f-display); letter-spacing: -.02em
 .status .back { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--accent); }
 
 /* ---------- полоса дней: одна таблица в строку, как шапка итоговой картинки ---------- */
-.strip { display: grid; grid-template-columns: 28px minmax(0, 1fr) 28px; gap: 4px; align-items: stretch; }
+.strip { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 4px; align-items: stretch; }
+/* Колонка стрелки 44px: касание не перекрывает соседние дни. */
 .arrow { display: grid; place-items: center; color: var(--muted); border-radius: 8px; }
 .arrow svg { width: 18px; height: 18px; }
 .arrow:active { background: var(--line); }
@@ -129,7 +132,7 @@ h1 { font: 700 clamp(28px, 9vw, 40px)/1 var(--f-display); letter-spacing: -.02em
 .grid tbody tr:last-child > * { border-bottom: 0; }
 .grid tbody td.sel, .grid tfoot td.sel { background: var(--pick); }
 .who button { width: 100%; height: var(--row); padding: 0 6px 0 12px; display: flex; align-items: center; }
-.who i { flex: none; width: 22px; font: 500 11px/1 var(--f-mono); font-style: normal; color: var(--line-strong); }
+.who i { flex: none; width: 22px; font: 500 11px/1 var(--f-mono); font-style: normal; color: var(--muted); }
 .who span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .who .full { display: none; }
 .who button:active { background: var(--line); }
@@ -165,7 +168,8 @@ h1 { font: 700 clamp(28px, 9vw, 40px)/1 var(--f-display); letter-spacing: -.02em
 .prog .num { font: 700 20px/1 var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .prog .num span { color: var(--muted); font-weight: 500; font-size: 14px; }
 .prog .track { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
-.prog .track i { display: block; height: 100%; background: var(--accent); transition: width .2s ease; }
+/* Заполнение через scaleX: анимируется transform, а не width (без перерасчёта раскладки). */
+.prog .track i { display: block; width: 100%; height: 100%; background: var(--accent); transform-origin: left; transition: transform .2s ease; }
 .prog .track i.full { background: var(--present-line); }
 .prog .sub { font: 500 11px/1.2 var(--f-mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seg-group { flex: none; display: flex; padding: 3px; gap: 3px; border: 1px solid var(--line-strong); border-radius: var(--r); height: 48px; background: var(--surface); }
@@ -205,19 +209,20 @@ h1 { font: 700 clamp(28px, 9vw, 40px)/1 var(--f-display); letter-spacing: -.02em
   .who .full { display: block; }
   .pair-h .t { font-size: 16px; }
   .days { max-width: 520px; }
-  .strip { grid-template-columns: 28px minmax(0, 520px) 28px; }
+  .strip { grid-template-columns: 44px minmax(0, 520px) 44px; }
 }
 /* Низкое окно (телефон боком, свёрнутый Telegram): шапку ужимаем, место отдаём таблице. */
 @media (max-height: 560px) {
   .top { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); align-items: center; gap: 6px 16px; padding-top: 6px; padding-bottom: 8px; }
   .eyebrow { grid-column: 1 / -1; min-height: 32px; }
   .icon-btn { width: 34px; height: 34px; }
+  .icon-btn::after { inset: -5px; }
   h1 { font-size: 22px; }
   .title .sub { margin-top: 2px; font-size: 13px; }
   .title .sub b { font-size: 12px; }
   .status { display: none; }
-  .strip { grid-template-columns: 24px minmax(0, 1fr) 24px; }
-  .chip { height: 40px; flex-direction: row; gap: 6px; }
+  .strip { grid-template-columns: 44px minmax(0, 1fr) 44px; }
+  .chip { height: 44px; flex-direction: row; gap: 6px; }
   .chip .foot { display: none; }
   .bar-b { padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
   .prog .sub { display: none; }
@@ -231,4 +236,6 @@ h1 { font: 700 clamp(28px, 9vw, 40px)/1 var(--f-display); letter-spacing: -.02em
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+  /* Без пульсации «сохранение» и «живой» статус различаются формой: пустой кружок вместо точки. */
+  .save[data-s="saving"]::before, .status .live::before { background: none; border: 2px solid var(--accent); }
 }
