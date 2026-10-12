@@ -117,7 +117,7 @@ async def test_a_restart_in_the_evening_still_posts_tomorrow(
     assert telegram.captions[0].startswith("📅 Завтра · вторник")
 
 
-async def test_on_the_eve_of_a_day_off_the_finished_day_stays(
+async def test_on_the_eve_of_a_day_off_the_day_off_is_posted(
     bot: BotService, ahead_config: AppConfig, telegram: FakeTelegram, at: Clock
 ) -> None:
     at(SATURDAY, "07:00")
@@ -125,10 +125,24 @@ async def test_on_the_eve_of_a_day_off_the_finished_day_stays(
     with connect(ahead_config.db_path) as conn:
         bot_store.record(conn, chat_id=CHAT, kind="today", day=SATURDAY, message_id=777)
 
-    at(SATURDAY, "21:00")  # Saturday is over, but Sunday has no picture to take its place
+    at(SATURDAY, "21:00")  # Saturday is over: Sunday's "Выходной" takes its place
+    await bot.tick()
+    await bot.tick()
+    assert telegram.kinds() == ["photo", "delete"]  # once; the finished day goes
+    assert telegram.captions[0].startswith("📅 Завтра · воскресенье")
+    assert ("delete", 777) in telegram.calls
+    assert _posted_days(ahead_config) == [SUNDAY]
+
+
+async def test_an_unpublished_day_is_not_posted_as_a_day_off(
+    bot: BotService, ahead_config: AppConfig, telegram: FakeTelegram, at: Clock
+) -> None:
+    at(MONDAY, "07:00")
+    save_demo(ahead_config, MONDAY)
+    at(dt.date(2026, 11, 19), "07:00")  # tomorrow is beyond the published range
     await bot.tick()
     assert "photo" not in telegram.kinds()
-    assert ("delete", 777) not in telegram.calls
+    assert _posted_days(ahead_config) == []
 
 
 async def test_go_in_the_evening_shows_tomorrow(

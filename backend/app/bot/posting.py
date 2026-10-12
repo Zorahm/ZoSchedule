@@ -87,7 +87,11 @@ class Poster:
                 return False
 
         await self._refresher.refresh_once(f"today:{day}")
-        picture = await self._ctx.pictures.today(day, force=force)
+        # With `day_ahead` the chat plans by the next day: a day off is told as "Выходной",
+        # otherwise silence before it is indistinguishable from a bot that is down.
+        picture = await self._ctx.pictures.today(
+            day, force=force, day_off=self._ctx.config.bot.day_ahead
+        )
         if picture is None:
             return False
         if not force and day == moscow.today() and self._day_is_over(picture):

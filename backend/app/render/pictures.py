@@ -120,14 +120,20 @@ class PictureBuilder:
             return None
         return loaded.days[0].lessons[-1].end
 
-    async def today(self, day: dt.date, *, force: bool = False) -> Picture | None:
-        """None when there is nothing worth posting: no data, unpublished, or a day off."""
+    async def today(
+        self, day: dt.date, *, force: bool = False, day_off: bool = False
+    ) -> Picture | None:
+        """None when there is nothing worth posting: no data, unpublished, or a day off.
+
+        `day_off` lets a published day without lessons through: "Выходной" is news when
+        the chat is told a day ahead. An unpublished day stays out either way.
+        """
         monday = week_monday(day)
         loaded = self._load(monday, 7)
         if loaded is None:
             return None
         view = loaded.days[day.weekday()]
-        if not force and (view.coverage == "unpublished" or not view.lessons):
+        if not force and (view.coverage == "unpublished" or not (view.lessons or day_off)):
             return None
         strip = loaded.days[:WEEK_DAYS]
         look = self._theme()
