@@ -32,7 +32,7 @@ from app.attendance.models import (
 from app.attendance.report import ReportError
 from app.config import AppConfig
 from app.db import connect
-from app.web import schedule
+from app.web import assets, schedule
 from app.web.auth import AuthError, TelegramUser, verify_init_data
 
 logger = logging.getLogger(__name__)
@@ -253,7 +253,12 @@ def _static_routes(app: web.Application) -> None:
         if path is None:
             raise web.HTTPNotFound
         # Интерфейс обновляется вместе с ботом: без проверки свежести староста застрял бы на старом.
-        return web.FileResponse(path, headers={"Cache-Control": "no-cache"})
+        headers = {"Cache-Control": "no-cache"}
+        if name == "index.html":
+            return web.Response(
+                text=assets.index_html(STATIC_DIR), content_type="text/html", headers=headers
+            )
+        return web.FileResponse(path, headers=headers)
 
     app.router.add_get("/", serve)
     app.router.add_get("/{name}", serve)

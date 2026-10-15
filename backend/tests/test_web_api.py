@@ -200,6 +200,9 @@ async def test_the_page_and_its_fonts_are_served_without_a_login(config: AppConf
 
     assert statuses == [200, 200, 200]
     assert "<title>Расписание</title>" in page
+    # Версия в адресах не даёт телефону собрать страницу из старых и новых файлов.
+    assert '<script src="api.js?v=' in page and '<link rel="stylesheet" href="app.css?v=' in page
+    assert "https://telegram.org/js/telegram-web-app.js" in page
     assert "script-src 'self' https://telegram.org" in headers["Content-Security-Policy"]
     assert headers["Cache-Control"] == "no-cache"
 
