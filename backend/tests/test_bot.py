@@ -813,3 +813,38 @@ async def test_real_browser_renders_a_png_of_the_right_width(
     assert picture.png[:8] == b"\x89PNG\r\n\x1a\n"
     width = int.from_bytes(picture.png[16:20], "big")
     assert width == 1080
+
+
+async def test_update_forces_a_refresh_inside_the_poll_interval(
+    bot_config: AppConfig, telegram: FakeTelegram, at: Clock
+) -> None:
+    at(SUNDAY, "01:00")
+    save_demo(bot_config, SUNDAY)
+    bot, schedule = _with_refresh(bot_config, telegram)
+
+    await bot.tick()  # the interval poll
+    assert schedule.runs == 1
+    reply = await bot.update()  # the attempt is fresh, the interval would skip a run
+
+    assert schedule.runs == 2
+    assert "изменений нет" in reply
+
+
+async def test_update_reports_a_failed_run_and_keeps_the_last_snapshot(
+    bot_config: AppConfig, telegram: FakeTelegram, at: Clock
+) -> None:
+    at(SUNDAY, "01:00")
+    save_demo(bot_config, SUNDAY)
+    bot, _ = _with_refresh(bot_config, telegram, ok=False)
+
+    reply = await bot.update()
+
+    assert "Не удалось" in reply and "down" in reply
+
+
+async def test_update_without_a_schedule_service_says_it_is_off(
+    bot_config: AppConfig, telegram: FakeTelegram
+) -> None:
+    bot = BotService(bot_config, telegram.bot, FakeRenderer())
+
+    assert "выключено" in await bot.update()

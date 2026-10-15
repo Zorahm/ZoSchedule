@@ -41,7 +41,7 @@ from app.config import AppConfig
 from app.parsing.curator import RoomNotice
 from app.render.pictures import PictureBuilder, target_monday
 from app.render.renderer import Renderer
-from app.snapshots.service import RoomCorrection
+from app.snapshots.service import RefreshOutcome, RoomCorrection
 
 logger = logging.getLogger(__name__)
 
@@ -170,8 +170,8 @@ class BotService:
 
     # -- what the bot does ----------------------------------------------------
 
-    async def refresh(self, *, force: bool = False) -> None:
-        await self._refresher.refresh(force=force)
+    async def refresh(self, *, force: bool = False) -> RefreshOutcome | None:
+        return await self._refresher.refresh(force=force)
 
     async def post_week(self, *, force: bool = False, target: Target | None = None) -> bool:
         return await self._poster.post_week(force=force, target=target)
@@ -216,6 +216,22 @@ class BotService:
         if not posted_week and day is None:
             return "Пока нечего показывать: в базе нет расписания."
         return None
+
+    async def update(self) -> str:
+        """/update: take a snapshot right now and tell every chat what changed. Returns a reply.
+
+        Ignores the poll interval: the person asking knows the site has just changed.
+        """
+        outcome = await self.refresh(force=True)
+        if outcome is None:
+            return "Обновление с сайта выключено (bot.refresh в config.toml)."
+        if not outcome.ok:
+            # The bot keeps working from the last good snapshot, so say so.
+            return f"Не удалось обновить расписание: {outcome.error}. Остаюсь на прошлом снимке."
+        await self._tell_chats_now()
+        if outcome.changes_detected == 0:
+            return "Расписание обновлено, изменений нет."
+        return f"Расписание обновлено, изменений: {outcome.changes_detected}."
 
     # -- loop -----------------------------------------------------------------
 
