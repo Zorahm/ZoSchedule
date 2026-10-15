@@ -34,6 +34,7 @@ WEEKDAYS_SHORT = ("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
 
 STREAM_TAG = "гр. {}"
 ROOM_LABEL = "аудитория"
+OPEN_MINIAPP = "Открыть в миниапке"
 BUILDING_TAG = "корп. {}"
 STREAM_LEGEND = "пара вместе с группой {}"
 TEACHER_UNKNOWN = "не указан на сайте"

@@ -7,7 +7,7 @@ import logging
 from collections.abc import Awaitable
 
 from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import BufferedInputFile, InputMediaPhoto
+from aiogram.types import BufferedInputFile, InlineKeyboardMarkup, InputMediaPhoto
 
 from app import moscow, texts
 from app.bot import errors
@@ -86,13 +86,19 @@ class Updater:
         pictures = self._ctx.pictures
         updated = 0
         for message in weeks:
-            updated += await self._sync(target, message, pictures.week(message.day))
+            # Правка картинки без разметки снимает кнопку: возвращаем её каждый раз.
+            markup = await self._ctx.open_button()
+            updated += await self._sync(target, message, pictures.week(message.day), markup)
         for message in days:
             updated += await self._sync(target, message, pictures.today(message.day, force=True))
         return updated
 
     async def _sync(
-        self, target: Target, message: bot_store.PostedMessage, picture: Awaitable[Picture | None]
+        self,
+        target: Target,
+        message: bot_store.PostedMessage,
+        picture: Awaitable[Picture | None],
+        markup: InlineKeyboardMarkup | None = None,
     ) -> int:
         current = await picture
         if current is None or current.fingerprint == message.fingerprint:
@@ -106,6 +112,7 @@ class Updater:
                     ),
                     chat_id=target.chat,
                     message_id=message.message_id,
+                    reply_markup=markup,
                 ),
                 errors.NOT_MODIFIED,
             )

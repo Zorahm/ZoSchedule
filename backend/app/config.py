@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import re
 import tomllib
 from functools import lru_cache
 from pathlib import Path
@@ -227,6 +228,18 @@ class WebConfig(BaseModel):
     """The address Telegram opens, https only (Telegram refuses anything else).
 
     Empty: the journal is off, the bot works as before."""
+    app_name: str = ""
+    """Short name of the Mini App in @BotFather (/newapp), for the "Открыть в миниапке" link
+    under the week picture: t.me/<bot>/<app_name>. Empty: the link opens the bot's main Mini App
+    (t.me/<bot>?startapp), which must be set in @BotFather (Bot Settings → Configure Mini App)."""
+
+    @field_validator("app_name")
+    @classmethod
+    def _app_name_is_a_short_name(cls, value: str) -> str:
+        value = value.strip()
+        if value and not re.fullmatch(r"[A-Za-z0-9_]{3,64}", value):
+            raise ValueError("web.app_name: ожидается короткое имя приложения из @BotFather (буквы, цифры, _)")
+        return value
 
     @field_validator("public_url")
     @classmethod
@@ -321,6 +334,7 @@ def load_config(path: Path | None = None) -> AppConfig:
     web: dict[str, object] = dict(cast("dict[str, object]", web_raw)) if isinstance(web_raw, dict) else {}
     for env_name, field in (
         ("ZOSCHEDULE_WEB_URL", "public_url"),
+        ("ZOSCHEDULE_WEB_APP_NAME", "app_name"),
         ("ZOSCHEDULE_WEB_HOST", "host"),
         ("ZOSCHEDULE_WEB_PORT", "port"),
     ):

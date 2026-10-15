@@ -9,8 +9,9 @@ from __future__ import annotations
 import logging
 
 from aiogram import Bot
-from aiogram.types import BufferedInputFile
+from aiogram.types import BufferedInputFile, InlineKeyboardButton, InlineKeyboardMarkup
 
+from app import texts
 from app.bot import errors
 from app.bot import store as bot_store
 from app.bot.store import Target
@@ -59,11 +60,31 @@ class BotContext:
 
     # -- messages -------------------------------------------------------------
 
-    async def send_photo(self, target: Target, picture: Picture) -> int:
+    async def open_button(self) -> InlineKeyboardMarkup | None:
+        """"Открыть в миниапке" under the week: a plain t.me link, because a web_app button
+        does not work in groups. None while the Mini App is off or the bot's name is unknown."""
+        web = self.config.web
+        if not web.enabled:
+            return None
+        try:
+            me = await self.bot.me()
+        except errors.TELEGRAM_ERRORS as error:
+            logger.warning("Не узнать имя бота, неделя уйдёт без ссылки на миниапп: %s", error)
+            return None
+        if not me.username:
+            return None
+        link = f"https://t.me/{me.username}/{web.app_name}" if web.app_name else f"https://t.me/{me.username}?startapp"
+        button = InlineKeyboardButton(text=texts.OPEN_MINIAPP, url=link)
+        return InlineKeyboardMarkup(inline_keyboard=[[button]])
+
+    async def send_photo(
+        self, target: Target, picture: Picture, markup: InlineKeyboardMarkup | None = None
+    ) -> int:
         sent = await self.bot.send_photo(
             chat_id=target.chat,
             photo=BufferedInputFile(picture.png, "schedule.png"),
             caption=picture.caption,
+            reply_markup=markup,
             message_thread_id=target.thread,
             disable_notification=self.config.bot.silent,
         )

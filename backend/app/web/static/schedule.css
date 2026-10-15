@@ -29,13 +29,20 @@
 .les-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--muted); }
 .les-top time { font-weight: 600; color: var(--ink); }
 .les-title { font-size: 16px; font-weight: 600; line-height: 1.25; overflow-wrap: anywhere; }
-.les-meta { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 14px; color: var(--muted); }
+.les-meta { display: flex; align-items: center; gap: 4px 10px; font-size: 14px; color: var(--muted); }
+.les-meta .who { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .les-meta .unknown { font-style: italic; }
-.les-meta .kind::first-letter { text-transform: uppercase; }
+/* Тип пары: цветная плашка у правого края. Цвета из токенов Yaca, в тёмной теме меняются сами. */
+.kind { flex: none; margin-left: auto; font: 600 12px/1 var(--f-mono); padding: 5px 9px; border-radius: 6px; border: 1px solid var(--line); background: var(--zebra); color: var(--muted); }
+.kind.k-lecture { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
+.kind.k-practice { background: var(--present-bg); border-color: var(--present-line); color: var(--present-ink); }
+.kind.k-lab { background: var(--note-bg); border-color: var(--note-line); color: var(--warn); }
+.kind.k-seminar { background: var(--sem-bg); border-color: var(--sem-line); color: var(--sem-ink); }
+.kind.k-exam { background: var(--del-bg); border-color: var(--stale); color: var(--stale); }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .tags:empty { display: none; }
 .tag { font: 500 12px/1 var(--f-mono); padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--zebra); color: var(--muted); }
-.tag.live, .tag.exam { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+.tag.live { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
 .les.now { background: var(--accent-soft); border-color: var(--accent); }
 .les.now .tag.live { background: var(--surface); }
 .gap { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); padding: 0 4px; }

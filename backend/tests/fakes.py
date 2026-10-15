@@ -31,6 +31,7 @@ from aiogram.methods import (
 from aiogram.methods.base import TelegramType
 from aiogram.types import (
     Chat,
+    InlineKeyboardMarkup,
     InputFile,
     Message,
     Update,
@@ -84,6 +85,8 @@ class FakeTelegram:
         self.calls: list[tuple[str, int | str]] = []
         self.texts: list[str] = []
         self.captions: list[str] = []
+        self.photo_buttons: list[list[tuple[str, str | None]]] = []
+        """Text and url of every button under each photo sent, in order."""
         self.threads: list[int | None] = []
         self.silent: list[bool | None] = []
         """The `disable_notification` flag of every message and photo sent, in order."""
@@ -154,6 +157,9 @@ class FakeTelegram:
             sent = self._new_message(method.chat_id)
             self.calls.append(("photo", sent.message_id))
             self.captions.append(method.caption or "")
+            markup = method.reply_markup
+            rows = markup.inline_keyboard if isinstance(markup, InlineKeyboardMarkup) else []
+            self.photo_buttons.append([(button.text, button.url) for row in rows for button in row])
             self.threads.append(method.message_thread_id)
             self.silent.append(method.disable_notification)
             self.chats.append(str(method.chat_id))

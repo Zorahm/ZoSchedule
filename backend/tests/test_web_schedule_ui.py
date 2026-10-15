@@ -18,7 +18,7 @@ from app.render.renderer import find_browser
 from app.web import preview
 
 _JUNK = ("null", "undefined", "NaN", "[object")
-Open = Callable[[str], Coroutine[Any, Any, Page]]
+Open = Callable[..., Coroutine[Any, Any, Page]]
 
 
 @pytest.fixture
@@ -37,8 +37,10 @@ async def open_app(tmp_path: Path) -> AsyncGenerator[Open]:
             pytest.skip(f"нет браузера для проверки интерфейса: {str(error).splitlines()[0]}")
         context = await browser.new_context(viewport={"width": 390, "height": 780})
 
-        async def opener(query: str) -> Page:
+        async def opener(query: str, script: str | None = None) -> Page:
             tab = await context.new_page()
+            if script:
+                await tab.add_init_script(script)
             await tab.goto((out / "index.html").as_uri() + query)
             await tab.wait_for_selector(".wk")
             return tab
@@ -127,3 +129,45 @@ async def test_a_student_sees_only_the_schedule(open_app: Open) -> None:
     assert await page.locator(".les").count() >= 4
     assert await page.locator(".nav").count() == 0
     assert not await page.locator("#pane-journal").is_visible()
+
+
+async def test_the_kind_of_a_lesson_is_colored_and_sits_at_the_right_edge(open_app: Open) -> None:
+    page = await open_app("")
+
+    assert await page.locator(".kind.k-lecture").count() >= 1
+    assert await page.locator(".kind.k-practice").count() >= 1
+    card = await page.locator(".les").first.bounding_box()
+    chip = await page.locator(".les .kind").first.bounding_box()
+    assert card is not None and chip is not None
+    assert card["x"] + card["width"] - (chip["x"] + chip["width"]) < 20  # у правого края карточки
+
+
+async def test_the_arrows_land_on_a_monday(open_app: Open) -> None:
+    page = await open_app("")  # пятница 2 октября
+
+    await page.get_by_label("Следующая неделя").click()
+    assert await page.locator("h1").inner_text() == "Понедельник"
+    assert await page.locator(".wd.sel").get_attribute("aria-label") == "Понедельник, 5 октября"
+
+    await page.get_by_label("Прошлая неделя").click()
+    await page.get_by_label("Прошлая неделя").click()
+    assert await page.locator(".wd.sel").get_attribute("aria-label") == "Понедельник, 21 сентября"
+
+
+_HOME_STUB = """
+window.Telegram = { WebApp: {
+  initData: '', colorScheme: 'light', BackButton: { onClick() {}, show() {}, hide() {} },
+  ready() {}, expand() {}, onEvent() {}, setHeaderColor() {}, setBackgroundColor() {},
+  checkHomeScreenStatus(cb) { cb('missed'); },
+  addToHomeScreen() { window.__added = true; },
+} };
+"""
+
+
+async def test_the_home_screen_shortcut_is_offered_only_where_telegram_can_add_it(open_app: Open) -> None:
+    page = await open_app("", _HOME_STUB)
+    await page.get_by_label("Добавить на экран телефона").click()
+    assert await page.evaluate("window.__added") is True
+
+    plain = await open_app("")
+    assert await plain.get_by_label("Добавить на экран телефона").count() == 0

@@ -55,6 +55,7 @@
     calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
     schedule: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 9h8M8 12.5h8M8 16h5"/>',
     journal: '<rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M9 9.5l2 2 4-4M9 16h6"/>',
+    pin: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/>',
     prev: '<path d="M14.5 6l-6 6 6 6"/>',
     next: '<path d="M9.5 6l6 6-6 6"/>',
   };
