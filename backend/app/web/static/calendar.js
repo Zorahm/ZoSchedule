@@ -11,8 +11,7 @@
     var S = ctx.state, sch = Zo.schedule, key = sch.monthKey(S.sel), drawer = null, body = null;
 
     function cell(iso) {
-      var day = S.days[iso], mark = '';
-      if (day && day.changes.length) mark = ' chg'; else if (day && day.state === 'lessons') mark = ' has';
+      var day = S.days[iso], mark = day && day.state === 'lessons' ? ' has' : '';
       var dim = !day || day.state === 'unpublished' || day.state === 'nodata' ? ' dim' : '';
       return h('button', { class: 'cd' + mark + dim + (iso === S.sel ? ' sel' : '') + (iso === Zo.today() ? ' today' : ''),
         'aria-label': Zo.weekday(iso) + ', ' + Zo.dayLabel(iso), onclick: function () { ctx.pick(iso); } },
@@ -35,7 +34,7 @@
           h('div', { class: 'cal-title' }, MONTHS[+p[1] - 1], ' ', h('span', { class: 'mono' }, p[0])),
           h('button', { class: 'icon-btn', 'aria-label': 'Следующий месяц', disabled: key >= hi, onclick: function () { go(1); } }, Zo.line('next'))),
         grid(),
-        h('div', { class: 'cal-legend mono' }, h('span', { class: 'lg has' }, 'есть пары'), h('span', { class: 'lg chg' }, 'есть изменения'), h('span', { class: 'lg dim' }, 'не опубликовано')),
+        h('div', { class: 'cal-legend mono' }, h('span', { class: 'lg has' }, 'есть пары'), h('span', { class: 'lg dim' }, 'не опубликовано')),
         published ? h('div', { class: 'cal-note' }, published) : null,
       ]);
     }

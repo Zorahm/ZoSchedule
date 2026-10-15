@@ -53,21 +53,18 @@ async def _clean(page: Page, where: str) -> None:
     assert not found, f"на экране {found!r} ({where}):\n{text[:400]}"
 
 
-async def test_the_schedule_is_the_first_screen_and_marks_changes(open_app: Open) -> None:
+async def test_the_schedule_is_the_first_screen_and_shows_only_current_lessons(open_app: Open) -> None:
     page = await open_app("")
 
     assert await page.locator("h1").inner_text() == "Пятница"
-    assert await page.locator(".les").count() >= 4
+    assert await page.locator(".les").count() == 4
     assert "Идёт сейчас" in await page.locator(".les.now").inner_text()
-    assert "Перенесена с 12:10" in await page.locator(".les .tag.warn").first.inner_text()
-    assert "Отменена" in await page.locator(".les.cancelled").inner_text()
     assert "преподаватель не указан на сайте" in await page.locator(".lessons").inner_text()
-    await _clean(page, "день")
-
-    await page.get_by_label("Следующая неделя").click()
-    await page.get_by_label("Понедельник, 5 октября").click()
-    assert "Другой преподаватель" in await page.locator(".tag.warn").first.inner_text()
     assert await page.locator(".void").count() == 0  # в день с парами «Выходной» не пишем
+    text = await page.locator(".sch-list").inner_text()
+    assert "Опубликовано на сайте" not in text  # эта подпись живёт только в календаре
+    assert not [word for word in ("Отменена", "Перенесена", "Добавлена", "Другой преподаватель") if word in text]
+    await _clean(page, "день")
 
 
 async def test_a_day_off_is_not_the_same_as_an_unpublished_one(open_app: Open) -> None:

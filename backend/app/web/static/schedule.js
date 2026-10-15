@@ -42,25 +42,9 @@
   function count(n) { return n + ' ' + Zo.plural(n, 'пара', 'пары', 'пар'); }
   function clock(min) { var hrs = Math.floor(min / 60), m = min % 60; return (hrs ? hrs + ' ч ' : '') + (m ? m + ' мин' : '').trim(); }
 
-  function changeText(c) {
-    if (c.kind === 'added') return 'Добавлена';
-    if (c.kind === 'moved') {
-      var parts = ['Перенесена' + (c.from_time && c.from_time !== c.time ? ' с ' + c.from_time : '')];
-      if (c.from_room && c.to_room && c.from_room !== c.to_room) parts.push('ауд. ' + c.from_room + ' → ' + c.to_room);
-      return parts.join(' · ');
-    }
-    if (c.kind === 'teacher_changed') return 'Другой преподаватель' + (c.from_teacher ? ' · был ' + Zo.shortName(c.from_teacher) : '');
-    return 'Отменена';
-  }
-
-  function changeOf(day, lesson) {
-    return day.changes.filter(function (c) { return c.kind !== 'cancelled' && c.discipline === lesson.title && c.time === lesson.start; })[0];
-  }
-
   /* ---------- карточки ---------- */
 
-  function lessonCard(day, lesson, live) {
-    var change = changeOf(day, lesson);
+  function lessonCard(lesson, live) {
     return h('li', { class: 'les' + (live ? ' now' : '') },
       h('div', { class: 'les-top mono' }, h('time', null, lesson.start + ' – ' + lesson.end),
         lesson.room ? h('span', { class: 'room' }, (lesson.building ? lesson.building + ' · ' : '') + 'ауд. ' + lesson.room) : null),
@@ -71,15 +55,7 @@
       lesson.stream.length ? h('div', { class: 'les-meta' }, h('span', null, 'Поток: ' + lesson.stream.join(', '))) : null,
       h('div', { class: 'tags' },
         live ? h('span', { class: 'tag live' }, 'Идёт сейчас') : null,
-        lesson.exam ? h('span', { class: 'tag exam' }, lesson.kind) : null,
-        change ? h('span', { class: 'tag warn' }, changeText(change)) : null));
-  }
-
-  function cancelledCard(change) {
-    return h('li', { class: 'les cancelled' },
-      h('div', { class: 'les-top mono' }, h('time', null, change.time)),
-      h('div', { class: 'les-title' }, change.discipline),
-      h('div', { class: 'tags' }, h('span', { class: 'tag gone' }, 'Отменена')));
+        lesson.exam ? h('span', { class: 'tag exam' }, lesson.kind) : null));
   }
 
   function gapRow(minutes) { return h('li', { class: 'gap mono', 'aria-label': 'Окно ' + clock(minutes) }, 'окно ' + clock(minutes)); }
@@ -90,19 +66,14 @@
       var now = Zo.nowMinutes();
       day.lessons.forEach(function (l) { if (Zo.minutes(l.start) <= now && now < Zo.minutes(l.end)) live = l; });
     }
-    var items = day.lessons.map(function (l) { return { time: l.start, node: lessonCard(day, l, l === live), lesson: l }; });
-    day.changes.filter(function (c) { return c.kind === 'cancelled'; }).forEach(function (c) {
-      items.push({ time: c.time, node: cancelledCard(c), lesson: null });
-    });
-    items.sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : (a.lesson ? 0 : 1) - (b.lesson ? 0 : 1); });
     var out = [], prev = null;
-    items.forEach(function (item) {
-      if (item.lesson && prev) {
-        var gap = Zo.minutes(item.lesson.start) - Zo.minutes(prev.end);
+    day.lessons.forEach(function (lesson) {
+      if (prev) {
+        var gap = Zo.minutes(lesson.start) - Zo.minutes(prev.end);
         if (gap >= GAP_MIN) out.push(gapRow(gap));
       }
-      if (item.lesson) prev = item.lesson;
-      out.push(item.node);
+      prev = lesson;
+      out.push(lessonCard(lesson, lesson === live));
     });
     return out;
   }
@@ -111,19 +82,16 @@
     if (day.state === 'lessons') return null;
     if (day.state === 'unpublished') {
       return h('div', { class: 'void dashed' }, h('div', { class: 'void-t' }, 'Ещё не опубликовано'),
-        h('p', null, S.publishedTo ? 'Сайт колледжа показывает расписание до ' + Zo.dayLabel(S.publishedTo) + '. Дальше пар пока нет, но это не выходной.'
-          : 'Сайт колледжа ещё не выложил расписание на эту дату. Это не выходной.'));
+        h('p', null, 'Сайт колледжа ещё не выложил расписание на эту дату. Это не выходной.'));
     }
     if (day.state === 'nodata') return h('div', { class: 'void' }, h('div', { class: 'void-t' }, 'Нет данных'), h('p', null, 'Расписание за этот день бот не застал.'));
-    var hasGone = day.changes.some(function (c) { return c.kind === 'cancelled'; });
-    return hasGone ? null : h('div', { class: 'void' }, h('div', { class: 'void-t' }, 'Выходной'), h('p', null, 'В этот день пар нет.'));
+    return h('div', { class: 'void' }, h('div', { class: 'void-t' }, 'Выходной'), h('p', null, 'В этот день пар нет.'));
   }
 
   /* ---------- шапка и полоса недели ---------- */
 
   function stripDay(iso) {
-    var day = S.days[iso], mark = '';
-    if (day && day.changes.length) mark = 'chg'; else if (day && day.state === 'lessons') mark = 'has';
+    var day = S.days[iso], mark = day && day.state === 'lessons' ? 'has' : '';
     var unusable = !day || day.state === 'unpublished' || day.state === 'nodata';
     return h('button', { class: 'wd ' + mark + (iso === S.sel ? ' sel' : '') + (iso === Zo.today() ? ' today' : '') + (unusable ? ' dim' : ''),
       'aria-pressed': iso === S.sel ? 'true' : 'false', 'aria-label': Zo.weekday(iso) + ', ' + Zo.dayLabel(iso), onclick: function () { select(iso); } },
@@ -147,13 +115,8 @@
   }
 
   function drawList() {
-    var day = S.days[S.sel], items = day.state === 'lessons' || day.changes.length ? lessonItems(day) : [], empty = emptyState(day);
-    Zo.fill(list, [h('ul', { class: 'lessons' }, items), empty, footnote(day)]);
-  }
-
-  function footnote(day) {
-    if (day.state !== 'lessons' || !S.publishedTo) return null;
-    return h('div', { class: 'foot-note mono' }, 'Опубликовано на сайте до ' + Zo.dayLabel(S.publishedTo));
+    var day = S.days[S.sel], items = lessonItems(day), empty = emptyState(day);
+    Zo.fill(list, [h('ul', { class: 'lessons' }, items), empty]);
   }
 
   function render() { drawTop(); drawList(); }
