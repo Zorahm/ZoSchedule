@@ -149,7 +149,7 @@
   function failure(error, onRetry) {
     var denied = error.status === 401 || error.status === 403;
     var title = denied ? 'Журнал только для старосты' : 'Не получилось загрузить';
-    var text = error.code === 'expired' ? 'Сессия устарела. Закройте журнал и откройте его заново из чата с ботом.' : error.message;
+    var text = error.code === 'expired' ? 'Сессия устарела. Закройте приложение и откройте его заново из чата с ботом.' : error.message;
     return h('div', { class: 'state', style: 'margin:0 16px' },
       h('div', { class: 'card' }, Zo.icon(denied ? 'lock' : 'warn', 'big-i'), h('div', { class: 'big' }, title), h('p', null, text),
         denied ? null : h('button', { class: 'btn', onclick: onRetry }, 'Повторить')));

@@ -89,6 +89,26 @@
     return { date: date, state: view.state, marked: marked, total: view.state === 'open' ? view.students.length * view.pairs.length : 0 };
   }
 
+  /* ---------- расписание: те же недели, но на год вперёд и с пометками изменений ---------- */
+
+  var CHANGES = {
+    '2026-10-02': [{ kind: 'moved', discipline: 'Веб-программирование', time: '10:10', from_time: '12:10', from_room: '307', to_room: '305' },
+      { kind: 'cancelled', discipline: 'Физкультура', time: '13:50' }],
+    '2026-10-05': [{ kind: 'teacher_changed', discipline: 'Математический анализ', time: '08:30', from_teacher: 'Орлов П. П.', to_teacher: 'Громова Д. А.' }],
+    '2026-10-06': [{ kind: 'added', discipline: 'Операционные системы', time: '13:50' }],
+  };
+
+  function scheduleDay(date) {
+    var pairs = pairsOf(date), changes = (CHANGES[date] || []).map(function (c) {
+      return Object.assign({ from_time: null, from_room: null, to_room: null, from_teacher: null, to_teacher: null, retake: false }, c);
+    });
+    var state = date > PUBLISHED_TO ? 'unpublished' : pairs.length ? 'lessons' : 'off';
+    var lessons = state !== 'lessons' ? [] : pairs.map(function (p) {
+      return { start: p.start, end: p.end, title: p.title, kind: p.kind, exam: false, teacher: p.teacher, room: p.room, building: null, stream: [] };
+    });
+    return { date: date, state: state, lessons: lessons, changes: state === 'unpublished' ? [] : changes };
+  }
+
   function delay(value) { return new Promise(function (ok) { setTimeout(function () { ok(value); }, 140); }); }
 
   Zo.api = {
@@ -99,6 +119,11 @@
       for (var i = 0; i < 6; i++) entries.push(weekEntry(Zo.addDays(monday, i)));
       return delay({ now: nowIso(), group: 'ОККИПд-307', current_day: current, next_opens_at: '2026-10-03T08:30:00+03:00',
         week: entries, day: dayView(shown) });
+    },
+    schedule: function (from, to) {
+      var start = from || Zo.monday(BASE.date), end = to || Zo.addDays(start, 6), days = [];
+      for (var d = start; d <= end; d = Zo.addDays(d, 1)) days.push(scheduleDay(d));
+      return delay({ now: nowIso(), group: 'ОККИПд-307', headman: !/[?&]guest/.test(location.search + location.hash), published_to: PUBLISHED_TO, days: days });
     },
     marks: function (date, changes) {
       var cells = seed(date, pairsOf(date));

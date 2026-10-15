@@ -12,7 +12,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.session.base import BaseSession
 from aiogram.enums import ParseMode
-from aiogram.types import BotCommand, BotCommandScopeChat
+from aiogram.types import BotCommand, BotCommandScopeChat, MenuButtonWebApp, WebAppInfo
 
 from app.bot import errors, handlers
 from app.bot.middleware import UpdateOffset
@@ -83,7 +83,21 @@ async def _on_startup(bot: Bot, service: BotService) -> None:
     else:
         logger.info("Бот слушает команды как @%s", me.username)
     if service.web_url is not None:
+        await _announce_schedule(bot, service.web_url)
         await _announce_journal(bot, service)
+
+
+async def _announce_schedule(bot: Bot, web_url: str) -> None:
+    """The default menu button of every private chat opens the mini app (the schedule).
+
+    Headmen get the same button per chat from ``pin_journal_button``. Cosmetic.
+    """
+    try:
+        await bot.set_chat_menu_button(
+            menu_button=MenuButtonWebApp(text="Расписание", web_app=WebAppInfo(url=web_url))
+        )
+    except errors.TELEGRAM_ERRORS as error:
+        logger.warning("Не удалось поставить кнопку расписания: %s", error)
 
 
 async def _announce_journal(bot: Bot, service: BotService) -> None:

@@ -43,6 +43,11 @@
       if (week) q.set('week', week);
       return call('GET', '/api/journal?' + q.toString());
     },
+    schedule: function (from, to) {
+      // Без дат сервер отдаёт текущую неделю по московскому времени: так узнаём «сегодня».
+      var q = from ? new URLSearchParams({ from: from, to: to }) : '';
+      return call('GET', '/api/schedule?' + q.toString());
+    },
     marks: function (day, changes) { return call('POST', '/api/marks', { date: day, changes: changes }); },
     sendReport: function (day, options) { return call('POST', '/api/report', { date: day, titles: !options || options.titles !== false }); },
     roster: function () { return call('GET', '/api/roster'); },

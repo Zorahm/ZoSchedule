@@ -199,7 +199,7 @@ async def test_the_page_and_its_fonts_are_served_without_a_login(config: AppConf
         statuses = [(await client.get(path)).status for path in ("/app.js", "/fonts/Onest-cyrillic.woff2", "/healthz")]
 
     assert statuses == [200, 200, 200]
-    assert "Журнал посещаемости" in page
+    assert "<title>Расписание</title>" in page
     assert "script-src 'self' https://telegram.org" in headers["Content-Security-Policy"]
     assert headers["Cache-Control"] == "no-cache"
 

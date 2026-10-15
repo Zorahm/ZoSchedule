@@ -5,7 +5,7 @@
   var h = Zo.h, tg = window.Telegram && window.Telegram.WebApp;
 
   var POLL_MS = 45000, FLUSH_MS = 350, RETRY_MS = 4000;
-  var S = { data: null, view: null, weekOf: null, save: 'saved', mode: 'present', pair: null, queue: new Map(), flushTimer: null, sheet: null };
+  var S = { active: false, data: null, view: null, weekOf: null, save: 'saved', mode: 'present', pair: null, queue: new Map(), flushTimer: null, sheet: null };
   var top, main, foot;
 
   function students() { return S.data.day.students; }
@@ -241,7 +241,7 @@
   }
 
   function boot() {
-    var app = document.getElementById('app');
+    var app = document.getElementById('pane-journal');
     top = h('div', { class: 'slot-top' }); main = h('main', { style: 'flex:1;min-height:0;display:flex;flex-direction:column' }); foot = h('div');
     app.append(top, main, foot);
     if (tg) {
@@ -252,12 +252,18 @@
     }
     setTheme();
     Zo.sheets.onClose = syncBackButton;
-    load();
-    setInterval(function () { if (!S.queue.size && !document.hidden && !Zo.roster.isOpen()) load(true); }, POLL_MS);
-    setInterval(function () { if (S.data && !document.hidden) { drawChrome(); } }, 30000);
-    document.addEventListener('visibilitychange', function () { if (!document.hidden) load(true); });
+    setInterval(function () { if (S.active && !S.queue.size && !document.hidden && !Zo.roster.isOpen()) load(true); }, POLL_MS);
+    setInterval(function () { if (S.active && S.data && !document.hidden) { drawChrome(); } }, 30000);
+    document.addEventListener('visibilitychange', function () { if (S.active && !document.hidden) load(true); });
   }
 
-  Zo.app = { boot: boot, state: S };
+  /** Журнал живёт только на своей вкладке: загружается при первом заходе и опрашивается, пока открыт. */
+  function setActive(on) {
+    S.active = on;
+    if (!on) return;
+    if (S.data) load(true); else load();
+  }
+
+  Zo.app = { boot: boot, state: S, setActive: setActive };
   boot();
 })();

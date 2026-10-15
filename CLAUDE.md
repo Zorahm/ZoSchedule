@@ -32,7 +32,7 @@ backend/
                        service.py — фасад; работа в context, refresh, posting, updates, reports
     bot/dev/           демо-данные и симулятор для тестовой группы (python -m app.bot …)
     attendance/        журнал посещаемости: models, store, schedule, journal, report, roster_file
-    web/               мини-приложение журнала: server.py (aiohttp), auth.py, static/ без сборки
+    web/               мини-приложение (расписание на год + журнал): server.py (aiohttp), schedule.py, auth.py, static/ без сборки
   tests/               pytest; fixtures/ — подготовленные снимки; fakes.py — поддельные Telegram и рендерер
 ```
 
