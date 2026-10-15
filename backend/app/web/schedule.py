@@ -1,7 +1,7 @@
-"""Расписание для мини-приложения: дни отрезка с парами и пометками изменений.
+"""Расписание для мини-приложения: дни отрезка с актуальными парами.
 
-Данные те же, что видит бот: снимки (``snapshots``) и события диффа. Здесь только
-сборка ответа; пары не склеиваются в слоты, как в журнале, потому что две пары
+Данные те же, что видит бот: последние снимки (``snapshots``). Изменения не показываем:
+студенту нужно то, что будет, а не что было. Здесь только сборка ответа; пары не склеиваются в слоты, как в журнале, потому что две пары
 в одно время студент должен видеть обе.
 """
 
@@ -14,7 +14,6 @@ from typing import Literal
 from pydantic import BaseModel
 
 from app import texts
-from app.models.changes import ChangeEvent, Moved, TeacherChanged
 from app.models.domain import Lesson
 from app.snapshots import store as snapshots
 
@@ -40,23 +39,10 @@ class ScheduleLesson(BaseModel):
     stream: list[str]
 
 
-class ScheduleChange(BaseModel):
-    kind: Literal["moved", "cancelled", "added", "teacher_changed"]
-    discipline: str
-    time: str
-    from_time: str | None = None
-    from_room: str | None = None
-    to_room: str | None = None
-    from_teacher: str | None = None
-    to_teacher: str | None = None
-    retake: bool = False
-
-
 class ScheduleDay(BaseModel):
     date: dt.date
     state: DayKind
     lessons: list[ScheduleLesson]
-    changes: list[ScheduleChange]
 
 
 class ScheduleOut(BaseModel):
@@ -85,57 +71,22 @@ def _lesson(lesson: Lesson) -> ScheduleLesson:
         exam=lesson.is_exam,
         teacher=(lesson.teacher or "").strip() or None,
         room=(lesson.room or "").strip() or None,
-        building=(lesson.building_short or "").strip() or None,
+        building=(lesson.building or "").strip() or None,
         stream=list(lesson.stream),
     )
 
 
-def _change(event: ChangeEvent) -> ScheduleChange:
-    time = event.to_time if isinstance(event, Moved) else event.at_time
-    return ScheduleChange(
-        kind=event.kind,
-        discipline=event.discipline,
-        time=time,
-        from_time=event.from_time if isinstance(event, Moved) else None,
-        from_room=event.from_room if isinstance(event, Moved) else None,
-        to_room=event.to_room if isinstance(event, Moved) else getattr(event, "room", None),
-        from_teacher=event.from_teacher if isinstance(event, TeacherChanged) else None,
-        to_teacher=event.to_teacher if isinstance(event, TeacherChanged) else None,
-        retake=event.retake,
-    )
-
-
-def _changes_by_day(events: list[ChangeEvent]) -> dict[dt.date, list[ScheduleChange]]:
-    """По одному, самому свежему событию на вид и дисциплину: старые перекрыты новыми."""
-    latest: dict[tuple[dt.date, str, str], ChangeEvent] = {}
-    for event in events:  # события идут от старых к новым
-        latest[(event.date, event.kind, event.discipline)] = event
-    by_day: dict[dt.date, list[ScheduleChange]] = {}
-    for (day, _, _), event in latest.items():
-        by_day.setdefault(day, []).append(_change(event))
-    for changes in by_day.values():
-        changes.sort(key=lambda change: change.time)
-    return by_day
-
-
-def _day(
-    conn: sqlite3.Connection, day: dt.date, today: dt.date, changes: list[ScheduleChange]
-) -> ScheduleDay:
+def _day(conn: sqlite3.Connection, day: dt.date, today: dt.date) -> ScheduleDay:
     # Сайт подчищает прошедшее, поэтому день ищем в самом свежем снимке, который его покрывал.
     meta = snapshots.latest_covering(conn, day)
     if meta is None:
-        return ScheduleDay(
-            date=day,
-            state="unpublished" if day >= today else "nodata",
-            lessons=[],
-            changes=changes,
-        )
+        return ScheduleDay(date=day, state="unpublished" if day >= today else "nodata", lessons=[])
     lessons = [
         _lesson(lesson)
         for lesson in snapshots.load_lessons(conn, meta.id, start=day, end=day)
         if not lesson.is_retake
     ]
-    return ScheduleDay(date=day, state="lessons" if lessons else "off", lessons=lessons, changes=changes)
+    return ScheduleDay(date=day, state="lessons" if lessons else "off", lessons=lessons)
 
 
 def build(
@@ -148,11 +99,7 @@ def build(
     now: dt.datetime,
 ) -> ScheduleOut:
     check_span(start, end, now.date())
-    by_day = _changes_by_day(snapshots.events_between(conn, start, end))
-    days = [
-        _day(conn, start + dt.timedelta(days=offset), now.date(), by_day.get(start + dt.timedelta(days=offset), []))
-        for offset in range((end - start).days + 1)
-    ]
+    days = [_day(conn, start + dt.timedelta(days=offset), now.date()) for offset in range((end - start).days + 1)]
     latest = snapshots.latest_ok(conn)
     return ScheduleOut(
         now=now,

@@ -5,14 +5,13 @@
   var Zo = (window.Zo = window.Zo || {});
   var h = Zo.h;
   var MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
-  var HEAD = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
+  var HEAD = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб'];  // воскресенья нет: всегда выходной
 
   function open(ctx) {
     var S = ctx.state, sch = Zo.schedule, key = sch.monthKey(S.sel), drawer = null, body = null;
 
     function cell(iso) {
-      var day = S.days[iso], mark = '';
-      if (day && day.changes.length) mark = ' chg'; else if (day && day.state === 'lessons') mark = ' has';
+      var day = S.days[iso], mark = day && day.state === 'lessons' ? ' has' : '';
       var dim = !day || day.state === 'unpublished' || day.state === 'nodata' ? ' dim' : '';
       return h('button', { class: 'cd' + mark + dim + (iso === S.sel ? ' sel' : '') + (iso === Zo.today() ? ' today' : ''),
         'aria-label': Zo.weekday(iso) + ', ' + Zo.dayLabel(iso), onclick: function () { ctx.pick(iso); } },
@@ -20,9 +19,11 @@
     }
 
     function grid() {
-      var first = sch.monthStart(key), last = sch.monthEnd(key), blanks = (Zo.parseDay(first).getDay() + 6) % 7, cells = [];
+      var first = sch.monthStart(key), last = sch.monthEnd(key), day1 = Zo.parseDay(first).getDay(), blanks = day1 === 0 ? 0 : day1 - 1, cells = [];
       for (var b = 0; b < blanks; b++) cells.push(h('span'));
-      for (var iso = first; iso <= last; iso = Zo.addDays(iso, 1)) cells.push(cell(iso));
+      for (var iso = first; iso <= last; iso = Zo.addDays(iso, 1)) {
+        if (Zo.parseDay(iso).getDay() !== 0) cells.push(cell(iso));
+      }
       return h('div', { class: 'cal-grid' }, HEAD.map(function (d) { return h('b', { class: 'mono' }, d); }), cells);
     }
 
@@ -35,7 +36,7 @@
           h('div', { class: 'cal-title' }, MONTHS[+p[1] - 1], ' ', h('span', { class: 'mono' }, p[0])),
           h('button', { class: 'icon-btn', 'aria-label': 'Следующий месяц', disabled: key >= hi, onclick: function () { go(1); } }, Zo.line('next'))),
         grid(),
-        h('div', { class: 'cal-legend mono' }, h('span', { class: 'lg has' }, 'есть пары'), h('span', { class: 'lg chg' }, 'есть изменения'), h('span', { class: 'lg dim' }, 'не опубликовано')),
+        h('div', { class: 'cal-legend mono' }, h('span', { class: 'lg has' }, 'есть пары'), h('span', { class: 'lg dim' }, 'не опубликовано')),
         published ? h('div', { class: 'cal-note' }, published) : null,
       ]);
     }

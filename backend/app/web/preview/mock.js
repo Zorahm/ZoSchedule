@@ -89,24 +89,15 @@
     return { date: date, state: view.state, marked: marked, total: view.state === 'open' ? view.students.length * view.pairs.length : 0 };
   }
 
-  /* ---------- расписание: те же недели, но на год вперёд и с пометками изменений ---------- */
-
-  var CHANGES = {
-    '2026-10-02': [{ kind: 'moved', discipline: 'Веб-программирование', time: '10:10', from_time: '12:10', from_room: '307', to_room: '305' },
-      { kind: 'cancelled', discipline: 'Физкультура', time: '13:50' }],
-    '2026-10-05': [{ kind: 'teacher_changed', discipline: 'Математический анализ', time: '08:30', from_teacher: 'Орлов П. П.', to_teacher: 'Громова Д. А.' }],
-    '2026-10-06': [{ kind: 'added', discipline: 'Операционные системы', time: '13:50' }],
-  };
+  /* ---------- расписание: те же недели, но на год вперёд ---------- */
 
   function scheduleDay(date) {
-    var pairs = pairsOf(date), changes = (CHANGES[date] || []).map(function (c) {
-      return Object.assign({ from_time: null, from_room: null, to_room: null, from_teacher: null, to_teacher: null, retake: false }, c);
-    });
+    var pairs = pairsOf(date);
     var state = date > PUBLISHED_TO ? 'unpublished' : pairs.length ? 'lessons' : 'off';
     var lessons = state !== 'lessons' ? [] : pairs.map(function (p) {
-      return { start: p.start, end: p.end, title: p.title, kind: p.kind, exam: false, teacher: p.teacher, room: p.room, building: null, stream: [] };
+      return { start: p.start, end: p.end, title: p.title, kind: p.kind, exam: false, teacher: p.teacher, room: p.room, building: 'Сокол', stream: [] };
     });
-    return { date: date, state: state, lessons: lessons, changes: state === 'unpublished' ? [] : changes };
+    return { date: date, state: state, lessons: lessons };
   }
 
   function delay(value) { return new Promise(function (ok) { setTimeout(function () { ok(value); }, 140); }); }

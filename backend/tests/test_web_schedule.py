@@ -4,11 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 
-from app import moscow
 from app.config import AppConfig
-from app.db import connect
-from app.models.changes import CancelledDraft, MovedDraft
-from app.snapshots import store as snapshots
 from tests.fakes import Clock, save_demo
 from tests.test_web_api import HEADMAN, STRANGER, TUE, FakeSender, auth, call, running
 
@@ -41,32 +37,10 @@ async def test_days_tell_lessons_from_an_unpublished_date(config: AppConfig, at:
     today = body["days"][0]
     assert today["state"] == "lessons" and today["lessons"]
     assert {"start", "end", "title", "kind", "teacher", "room"} <= set(today["lessons"][0])
+    assert "changes" not in today  # только актуальные пары
+    assert today["lessons"][0]["building"] == "Сокол"  # полное название, как на картинках
     assert body["published_to"] is not None
     assert [day["state"] for day in later["days"]] == ["unpublished", "unpublished"]  # не «Выходной»
-
-
-async def test_changes_ride_on_their_day(config: AppConfig, at: Clock) -> None:
-    at(TUE, "10:00")
-    save_demo(config, TUE)
-    with connect(config.db_path) as conn:
-        snapshot = snapshots.latest_ok(conn)
-        assert snapshot is not None
-        snapshots.save_events(
-            conn,
-            snapshot_id=snapshot.id,
-            prev_snapshot_id=None,
-            detected_at=moscow.now(),
-            drafts=[
-                MovedDraft(date=TUE, discipline="Физика", from_time="08:30", to_time="10:10"),
-                CancelledDraft(date=TUE, discipline="Химия", at_time="12:10"),
-            ],
-        )
-    async with running(config, FakeSender()) as client:
-        _, body = await call(client, "GET", f"/api/schedule?from={TUE}&to={TUE}", headers=auth(STRANGER))
-
-    changes = {change["kind"]: change for change in body["days"][0]["changes"]}
-    assert changes["moved"]["from_time"] == "08:30" and changes["moved"]["time"] == "10:10"
-    assert changes["cancelled"]["time"] == "12:10"
 
 
 async def test_a_too_wide_or_backwards_range_is_a_400(config: AppConfig, at: Clock) -> None:

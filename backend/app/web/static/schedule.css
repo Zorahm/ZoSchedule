@@ -9,21 +9,19 @@
 .wk { display: flex; align-items: center; gap: 2px; margin: 0 -6px; }
 .wk .step { flex: none; width: 28px; height: 56px; display: grid; place-items: center; color: var(--muted); }
 .wk .step svg { width: 20px; height: 20px; }
-.wk-days { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.wk-days { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
 .wd { height: 62px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 4px; }
 .wd .w { font: 600 10px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .wd .n { font-size: 17px; font-weight: 600; line-height: 1; }
 .wd i { width: 5px; height: 5px; border-radius: 50%; background: transparent; }
 .wd.has i { background: var(--line-strong); }
-.wd.chg i { background: var(--accent); }
 .wd.dim { background: transparent; border-style: dashed; }
 .wd.dim .n { color: var(--muted); font-weight: 500; }
 .wd.today { border-color: var(--accent); }
 .wd.today .n { color: var(--accent-ink); }
 .wd.sel { background: var(--accent-soft); border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .wd.sel .w { color: var(--accent-ink); }
-.wd.chg.sel i { background: var(--accent-ink); }
 
 /* ---------- карточки пар ---------- */
 .lessons { list-style: none; display: flex; flex-direction: column; gap: 8px; }
@@ -37,13 +35,9 @@
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .tags:empty { display: none; }
 .tag { font: 500 12px/1 var(--f-mono); padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--zebra); color: var(--muted); }
-.tag.warn { border-color: var(--note-line); background: var(--note-bg); color: var(--warn); }
 .tag.live, .tag.exam { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
-.tag.gone { border-color: var(--stale); background: var(--del-bg); color: var(--stale); }
 .les.now { background: var(--accent-soft); border-color: var(--accent); }
 .les.now .tag.live { background: var(--surface); }
-.les.cancelled { background: transparent; border-style: dashed; }
-.les.cancelled .les-title { text-decoration: line-through; color: var(--muted); }
 .gap { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); padding: 0 4px; }
 .gap::before, .gap::after { content: ""; flex: 1; border-top: 1px dashed var(--line-strong); opacity: .6; }
 
@@ -52,7 +46,6 @@
 .void-t { font-size: 20px; font-weight: 600; line-height: 1.2; }
 .void p { color: var(--muted); max-width: 36ch; }
 .void .btn { margin-top: 6px; }
-.foot-note { font-size: 11px; color: var(--muted); letter-spacing: .02em; padding: 4px 2px 0; }
 
 /* ---------- календарь ---------- */
 .cal { display: flex; flex-direction: column; gap: 12px; }
@@ -60,20 +53,18 @@
 .cal-title { font-size: 17px; font-weight: 600; }
 .cal-title .mono { color: var(--muted); font-weight: 500; font-size: 13px; }
 .cal-head .icon-btn[disabled] { opacity: .35; cursor: default; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
 .cal-grid b { text-align: center; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding-bottom: 2px; }
 .cd { height: 46px; border-radius: 8px; border: 1px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: var(--surface); }
 .cd .mono { font-size: 14px; font-weight: 500; }
 .cd i { width: 5px; height: 5px; border-radius: 50%; }
 .cd.has i { background: var(--line-strong); }
-.cd.chg i { background: var(--accent); }
 .cd.dim { background: transparent; color: var(--muted); }
 .cd.today { border-color: var(--accent); }
 .cd.sel { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
 .cal-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11px; color: var(--muted); }
 .lg::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
 .lg.has::before { background: var(--line-strong); }
-.lg.chg::before { background: var(--accent); }
 .lg.dim::before { border: 1px dashed var(--line-strong); }
 .cal-note { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
 
