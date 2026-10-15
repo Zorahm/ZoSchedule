@@ -83,6 +83,13 @@ async def stop(message: Message, service: BotService) -> None:
         await message.answer("Сюда я и не пишу. Начать: /go.", disable_notification=True)
 
 
+async def update(message: Message, service: BotService) -> None:
+    """/update: refresh the schedule from the site now instead of waiting for the poll."""
+    if not _is_trusted(message, service):
+        return
+    await message.answer(await service.update(), disable_notification=True)
+
+
 async def delete_reply(message: Message, service: BotService, bot: Bot) -> None:
     """/del as a reply to a message of the bot: the bot deletes it, and the command with it.
 
@@ -231,6 +238,7 @@ def build_router() -> Router:
     router.message.register(go_outside_a_group, Command("go", ignore_case=True), ~_IN_GROUP)
     router.message.register(go, Command("go", ignore_case=True), _IN_GROUP)
     router.message.register(stop, Command("stop", ignore_case=True), _IN_GROUP)
+    router.message.register(update, Command("update", ignore_case=True), _IN_GROUP)
     router.message.register(delete_reply, Command("del", ignore_case=True), _IN_GROUP)
     router.message.register(
         open_journal, Command("start", "attendance", ignore_case=True), F.chat.type == "private"
