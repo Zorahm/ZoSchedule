@@ -108,6 +108,7 @@
   }
 
   function emptyState(day) {
+    if (day.state === 'lessons') return null;
     if (day.state === 'unpublished') {
       return h('div', { class: 'void dashed' }, h('div', { class: 'void-t' }, 'Ещё не опубликовано'),
         h('p', null, S.publishedTo ? 'Сайт колледжа показывает расписание до ' + Zo.dayLabel(S.publishedTo) + '. Дальше пар пока нет, но это не выходной.'

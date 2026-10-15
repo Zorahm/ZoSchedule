@@ -67,6 +67,7 @@ async def test_the_schedule_is_the_first_screen_and_marks_changes(open_app: Open
     await page.get_by_label("Следующая неделя").click()
     await page.get_by_label("Понедельник, 5 октября").click()
     assert "Другой преподаватель" in await page.locator(".tag.warn").first.inner_text()
+    assert await page.locator(".void").count() == 0  # в день с парами «Выходной» не пишем
 
 
 async def test_a_day_off_is_not_the_same_as_an_unpublished_one(open_app: Open) -> None:
