@@ -274,6 +274,44 @@ async def test_week_is_posted_pinned_and_not_duplicated(
     assert telegram.kinds() == ["photo", "pin"]
 
 
+async def test_the_week_carries_a_link_to_the_mini_app(
+    bot_config: AppConfig, telegram: FakeTelegram, at: Clock
+) -> None:
+    at(SUNDAY)
+    save_demo(bot_config, SUNDAY)
+    web = bot_config.web.model_copy(update={"public_url": "https://z.example.org", "app_name": "schedule"})
+    config = bot_config.model_copy(update={"web": web})
+    service = BotService(config, telegram.bot, FakeRenderer())
+
+    assert await service.post_week() is True
+
+    assert telegram.photo_buttons == [[("Открыть в миниапке", "https://t.me/zoschedulebot/schedule")]]
+
+
+async def test_without_an_app_name_the_link_opens_the_main_mini_app(
+    bot_config: AppConfig, telegram: FakeTelegram, at: Clock
+) -> None:
+    at(SUNDAY)
+    save_demo(bot_config, SUNDAY)
+    web = bot_config.web.model_copy(update={"public_url": "https://z.example.org"})
+    service = BotService(bot_config.model_copy(update={"web": web}), telegram.bot, FakeRenderer())
+
+    await service.post_week()
+
+    assert telegram.photo_buttons == [[("Открыть в миниапке", "https://t.me/zoschedulebot?startapp")]]
+
+
+async def test_no_link_while_the_mini_app_is_off(
+    bot: BotService, bot_config: AppConfig, telegram: FakeTelegram, at: Clock
+) -> None:
+    at(SUNDAY)
+    save_demo(bot_config, SUNDAY)
+
+    await bot.post_week()
+
+    assert telegram.photo_buttons == [[]]
+
+
 async def test_new_week_replaces_the_old_one(
     bot: BotService, bot_config: AppConfig, telegram: FakeTelegram, at: Clock
 ) -> None:

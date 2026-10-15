@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Обложка мини-приложения</title>
+<style>
+/* Обложка для @BotFather (/newapp просит фото 640×360). Палитра и шрифты — те же, что у
+   мини-приложения (static/app.css, стиль Yaca). Рендер: см. render_cover.py рядом. */
+@font-face{font-family:Onest;font-weight:100 900;src:url(../../render/assets/fonts/Onest-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:Onest;font-weight:100 900;src:url(../../render/assets/fonts/Onest-latin.woff2) format('woff2');unicode-range:U+0000-00FF}
+@font-face{font-family:'JetBrains Mono';font-weight:100 800;src:url(../../render/assets/fonts/JetBrainsMono-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'JetBrains Mono';font-weight:100 800;src:url(../../render/assets/fonts/JetBrainsMono-latin.woff2) format('woff2');unicode-range:U+0000-00FF}
+:root{--bg:#15181b;--surface:#1e2327;--ink:#e7ebe9;--muted:#9aa3a8;--line:#343c42;--frame:#3e474e;
+  --accent:#23807e;--accent-ink:#8ed8d6;--accent-soft:#1d3b3b;--present-bg:#1f3a27;--present-ink:#6cc08c;--present-line:#2f6b45;
+  --note-bg:#33301f;--note-line:#5a5030;--warn:#e0b65a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:640px;height:360px;overflow:hidden;background:var(--bg);color:var(--ink);font:400 15px/1.35 Onest,system-ui,sans-serif;
+  display:grid;grid-template-columns:300px 1fr;align-items:center;gap:20px;padding:0 36px 0 40px;position:relative}
+.mono{font-family:'JetBrains Mono',monospace}
+.l .eyebrow{font:600 11px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+h1{font:600 46px/1.04 Onest,sans-serif;letter-spacing:-.02em}
+h1 em{font-style:normal;color:var(--accent-ink)}
+.l p{margin-top:16px;color:var(--muted);font-size:16px;max-width:24ch}
+.chips{display:flex;gap:6px;margin-top:22px}
+.chips b{font:600 11px/1 'JetBrains Mono',monospace;padding:6px 9px;border-radius:6px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
+.r{display:flex;flex-direction:column;gap:8px}
+.wk{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:4px}
+.wk div{height:50px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.wk span{font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;color:var(--muted)}
+.wk strong{font:600 15px/1 Onest;}
+.wk .on{background:var(--accent-soft);border-color:var(--accent)}
+.wk .on span,.wk .on strong{color:var(--accent-ink)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:5px}
+.card .t{display:flex;justify-content:space-between;font:500 11px/1 'JetBrains Mono',monospace;color:var(--muted)}
+.card .t b{color:var(--ink);font-weight:600}
+.card .n{font-weight:600;font-size:14px;line-height:1.2}
+.card .k{align-self:flex-end;font:600 10px/1 'JetBrains Mono',monospace;padding:4px 7px;border-radius:6px;border:1px solid}
+.k.lec{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}
+.k.pr{background:var(--present-bg);border-color:var(--present-line);color:var(--present-ink)}
+.k.lab{background:var(--note-bg);border-color:var(--note-line);color:var(--warn)}
+.card.row{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+.card.row .n{flex:1}
+.card.row .k{align-self:center}
+.pill{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:none}
+</style>
+</head>
+<body>
+<div class="l">
+  <div class="eyebrow">Группа · ОККИПд-307</div>
+  <h1>Рас&shy;писание <em>на год</em></h1>
+  <p>Пары, аудитории и календарь в одном месте</p>
+  <div class="chips"><b>ЛЕКЦИЯ</b><b>ПРАКТИКА</b><b>ЛР</b></div>
+</div>
+<div class="r">
+  <div class="wk"><div><span>ПН</span><strong>5</strong></div><div class="on"><span>ВТ</span><strong>6</strong></div><div><span>СР</span><strong>7</strong></div><div><span>ЧТ</span><strong>8</strong></div><div><span>ПТ</span><strong>9</strong></div><div><span>СБ</span><strong>10</strong></div></div>
+  <div class="card row"><div><div class="t"><b>08:30 – 10:00</b></div><div class="n" style="margin-top:5px">Базы данных</div></div><span class="k lab">ЛР</span></div>
+  <div class="card row"><div><div class="t"><b>10:10 – 11:40</b></div><div class="n" style="margin-top:5px">Иностранный язык</div></div><span class="k pr">ПРАКТИКА</span></div>
+  <div class="card row"><div><div class="t"><b>12:10 – 13:40</b></div><div class="n" style="margin-top:5px">Математика</div></div><span class="k lec">ЛЕКЦИЯ</span></div>
+</div>
+</body>
+</html>

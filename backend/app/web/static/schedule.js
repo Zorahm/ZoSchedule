@@ -44,18 +44,21 @@
 
   /* ---------- карточки ---------- */
 
+  /** Цвет типа пары: по подписи с сервера (texts.kind_label). Незнакомый тип остаётся нейтральным. */
+  var KINDS = { 'лекция': 'lecture', 'практика': 'practice', 'лр': 'lab', 'семинар': 'seminar', 'зачёт': 'exam', 'экзамен': 'exam' };
+  function kindClass(kind) { return 'k-' + (KINDS[kind.trim().toLowerCase()] || 'other'); }
+
   function lessonCard(lesson, live) {
     return h('li', { class: 'les' + (live ? ' now' : '') },
       h('div', { class: 'les-top mono' }, h('time', null, lesson.start + ' – ' + lesson.end),
         lesson.room ? h('span', { class: 'room' }, (lesson.building ? 'корп. ' + lesson.building + ' · ' : '') + 'ауд. ' + lesson.room) : null),
       h('div', { class: 'les-title' }, lesson.title),
       h('div', { class: 'les-meta' },
-        lesson.teacher ? h('span', null, lesson.teacher) : h('span', { class: 'unknown' }, 'преподаватель не указан на сайте'),
-        h('span', { class: 'kind' }, lesson.kind)),
+        lesson.teacher ? h('span', { class: 'who' }, lesson.teacher) : h('span', { class: 'who unknown' }, 'преподаватель не указан на сайте'),
+        h('span', { class: 'kind ' + kindClass(lesson.kind) }, lesson.kind)),
       lesson.stream.length ? h('div', { class: 'les-meta' }, h('span', null, 'Поток: ' + lesson.stream.join(', '))) : null,
       h('div', { class: 'tags' },
-        live ? h('span', { class: 'tag live' }, 'Идёт сейчас') : null,
-        lesson.exam ? h('span', { class: 'tag exam' }, lesson.kind) : null));
+        live ? h('span', { class: 'tag live' }, 'Идёт сейчас') : null));
   }
 
   function gapRow(minutes) { return h('li', { class: 'gap mono', 'aria-label': 'Окно ' + clock(minutes) }, 'окно ' + clock(minutes)); }
@@ -98,6 +101,25 @@
       h('span', { class: 'w' }, Zo.weekdayShort(iso)), h('span', { class: 'n mono' }, Zo.parseDay(iso).getDate()), h('i'));
   }
 
+  /* ---------- ярлык на рабочем столе ---------- */
+
+  var tg = window.Telegram && window.Telegram.WebApp;
+
+  /** Кнопка есть, только если Telegram умеет ярлыки и приложения ещё нет на экране телефона. */
+  function homeButton() {
+    if (!tg || !tg.addToHomeScreen || (S.home !== 'unknown' && S.home !== 'missed')) return null;
+    return h('button', { class: 'icon-btn', 'aria-label': 'Добавить на экран телефона', title: 'Добавить на экран телефона',
+      onclick: function () { Zo.haptic('select'); try { tg.addToHomeScreen(); } catch (e) { Zo.sheets.toast('Не получилось добавить ярлык'); } } }, Zo.line('pin'));
+  }
+
+  function watchHome() {
+    if (!tg || !tg.checkHomeScreenStatus) return;
+    try {
+      tg.checkHomeScreenStatus(function (status) { S.home = status; if (S.sel) drawTop(); });
+      tg.onEvent('homeScreenAdded', function () { S.home = 'added'; if (S.sel) drawTop(); });
+    } catch (e) { /* старый клиент: кнопки не будет */ }
+  }
+
   function drawTop() {
     var day = S.days[S.sel], monday = Zo.monday(S.sel), days = [];
     for (var i = 0; i < 6; i++) days.push(stripDay(Zo.addDays(monday, i)));
@@ -106,12 +128,13 @@
       h('div', { class: 'eyebrow' },
         h('span', { class: 'grp' }, 'Группа · ', h('em', null, S.group)), h('span', { class: 'sp' }),
         S.sel !== Zo.today() ? h('button', { class: 'pill', onclick: function () { select(Zo.today()); } }, 'Сегодня') : null,
+        homeButton(),
         h('button', { class: 'icon-btn', 'aria-label': 'Календарь на год', onclick: openCalendar }, Zo.line('calendar'))),
       h('div', { class: 'title' }, h('h1', null, Zo.weekday(S.sel)), h('div', { class: 'sub' }, sub)),
       h('div', { class: 'wk' },
-        h('button', { class: 'step', 'aria-label': 'Прошлая неделя', onclick: function () { select(Zo.addDays(S.sel, -7)); } }, Zo.line('prev')),
+        h('button', { class: 'step', 'aria-label': 'Прошлая неделя', onclick: function () { select(Zo.monday(Zo.addDays(S.sel, -7))); } }, Zo.line('prev')),
         h('div', { class: 'wk-days' }, days),
-        h('button', { class: 'step', 'aria-label': 'Следующая неделя', onclick: function () { select(Zo.addDays(S.sel, 7)); } }, Zo.line('next')))));
+        h('button', { class: 'step', 'aria-label': 'Следующая неделя', onclick: function () { select(Zo.monday(Zo.addDays(S.sel, 7))); } }, Zo.line('next')))));
   }
 
   function drawList() {
@@ -193,6 +216,7 @@
     list.addEventListener('touchstart', onTouch, { passive: true });
     list.addEventListener('touchend', onTouch, { passive: true });
     root.append(top, list);
+    watchHome();
     setInterval(refresh, POLL_MS);
     document.addEventListener('visibilitychange', function () { if (!document.hidden) refresh(); });
     start();

@@ -46,7 +46,7 @@ class Poster:
             logger.warning("Нет ни одного снимка: неделя не отправлена")
             return False
 
-        message_id = await ctx.send_photo(target, picture)
+        message_id = await ctx.send_photo(target, picture, await ctx.open_button())
         with connect(ctx.config.db_path) as conn:
             bot_store.record(
                 conn,
