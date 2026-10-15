@@ -47,7 +47,7 @@
   function lessonCard(lesson, live) {
     return h('li', { class: 'les' + (live ? ' now' : '') },
       h('div', { class: 'les-top mono' }, h('time', null, lesson.start + ' – ' + lesson.end),
-        lesson.room ? h('span', { class: 'room' }, (lesson.building ? lesson.building + ' · ' : '') + 'ауд. ' + lesson.room) : null),
+        lesson.room ? h('span', { class: 'room' }, (lesson.building ? 'корп. ' + lesson.building + ' · ' : '') + 'ауд. ' + lesson.room) : null),
       h('div', { class: 'les-title' }, lesson.title),
       h('div', { class: 'les-meta' },
         lesson.teacher ? h('span', null, lesson.teacher) : h('span', { class: 'unknown' }, 'преподаватель не указан на сайте'),
@@ -100,7 +100,7 @@
 
   function drawTop() {
     var day = S.days[S.sel], monday = Zo.monday(S.sel), days = [];
-    for (var i = 0; i < 7; i++) days.push(stripDay(Zo.addDays(monday, i)));
+    for (var i = 0; i < 6; i++) days.push(stripDay(Zo.addDays(monday, i)));
     var sub = Zo.dayLabel(S.sel) + (day && day.state === 'lessons' ? ' · ' + count(day.lessons.length) : '');
     Zo.fill(top, h('div', { class: 'top' },
       h('div', { class: 'eyebrow' },
@@ -123,7 +123,14 @@
 
   /* ---------- действия ---------- */
 
+  /** Воскресенья в расписании нет: это всегда выходной, выбрать его нельзя. */
+  function skipSunday(iso) {
+    if (Zo.parseDay(iso).getDay() !== 0) return iso;
+    return Zo.addDays(iso, S.sel && iso < S.sel ? -1 : 1);
+  }
+
   async function select(iso, quiet) {
+    iso = skipSunday(iso);
     if (iso < S.min) iso = S.min;
     if (iso > S.max) iso = S.max;
     try { await ensureWeek(iso); } catch (e) { if (!quiet) Zo.sheets.toast(e.message); return; }

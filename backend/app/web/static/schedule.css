@@ -9,7 +9,7 @@
 .wk { display: flex; align-items: center; gap: 2px; margin: 0 -6px; }
 .wk .step { flex: none; width: 28px; height: 56px; display: grid; place-items: center; color: var(--muted); }
 .wk .step svg { width: 20px; height: 20px; }
-.wk-days { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.wk-days { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
 .wd { height: 62px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 4px; }
 .wd .w { font: 600 10px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
@@ -53,7 +53,7 @@
 .cal-title { font-size: 17px; font-weight: 600; }
 .cal-title .mono { color: var(--muted); font-weight: 500; font-size: 13px; }
 .cal-head .icon-btn[disabled] { opacity: .35; cursor: default; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
 .cal-grid b { text-align: center; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding-bottom: 2px; }
 .cd { height: 46px; border-radius: 8px; border: 1px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: var(--surface); }
 .cd .mono { font-size: 14px; font-weight: 500; }

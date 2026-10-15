@@ -70,12 +70,30 @@ async def test_the_schedule_is_the_first_screen_and_shows_only_current_lessons(o
 async def test_a_day_off_is_not_the_same_as_an_unpublished_one(open_app: Open) -> None:
     page = await open_app("")
 
-    await page.get_by_label("Воскресенье, 4 октября").click()
+    await page.get_by_label("Четверг, 1 октября").click()  # опубликован, пар нет
     assert await page.locator(".void-t").inner_text() == "Выходной"
 
-    await page.get_by_label("Следующая неделя").click()  # воскресенье 11 октября: за пределом публикации
+    await page.get_by_label("Следующая неделя").click()
+    await page.get_by_label("Следующая неделя").click()  # четверг 15 октября: за пределом публикации
     assert await page.locator(".void-t").inner_text() == "Ещё не опубликовано"
     await _clean(page, "не опубликовано")
+
+
+async def test_sunday_is_not_offered_and_the_building_is_named(open_app: Open) -> None:
+    page = await open_app("")
+
+    assert await page.locator(".wd").count() == 6
+    assert await page.get_by_label("Воскресенье, 4 октября").count() == 0
+    await page.get_by_label("Календарь на год").click()
+    assert await page.locator(".cal-grid b").count() == 6
+    assert await page.locator(".cd").count() == 27  # октябрь 2026: 31 день минус 4 воскресенья
+    await page.locator(".scrim").click(position={"x": 10, "y": 10})
+
+    await page.get_by_label("Суббота, 3 октября").click()
+    await page.get_by_label("Следующая неделя").click()
+    await page.get_by_label("Суббота, 10 октября").click()
+    assert await page.locator("h1").inner_text() == "Суббота"
+    assert "корп. Сокол" in await page.locator(".les-top").first.inner_text()
 
 
 async def test_the_calendar_reaches_a_year_ahead(open_app: Open) -> None:
@@ -87,7 +105,7 @@ async def test_the_calendar_reaches_a_year_ahead(open_app: Open) -> None:
     assert "Октябрь" in await page.locator(".cal-title").inner_text()
     assert await page.get_by_label("Следующий месяц").is_disabled()
 
-    await page.locator(".cd").nth(14).click()  # 15 октября 2027
+    await page.locator(".cd").nth(10).click()  # день через год
     assert await page.locator("h1").inner_text() != ""
     assert await page.locator(".void-t").inner_text() == "Ещё не опубликовано"
 

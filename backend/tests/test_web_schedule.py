@@ -38,6 +38,7 @@ async def test_days_tell_lessons_from_an_unpublished_date(config: AppConfig, at:
     assert today["state"] == "lessons" and today["lessons"]
     assert {"start", "end", "title", "kind", "teacher", "room"} <= set(today["lessons"][0])
     assert "changes" not in today  # только актуальные пары
+    assert today["lessons"][0]["building"] == "Сокол"  # полное название, как на картинках
     assert body["published_to"] is not None
     assert [day["state"] for day in later["days"]] == ["unpublished", "unpublished"]  # не «Выходной»
 

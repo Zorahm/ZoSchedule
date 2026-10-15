@@ -95,7 +95,7 @@
     var pairs = pairsOf(date);
     var state = date > PUBLISHED_TO ? 'unpublished' : pairs.length ? 'lessons' : 'off';
     var lessons = state !== 'lessons' ? [] : pairs.map(function (p) {
-      return { start: p.start, end: p.end, title: p.title, kind: p.kind, exam: false, teacher: p.teacher, room: p.room, building: null, stream: [] };
+      return { start: p.start, end: p.end, title: p.title, kind: p.kind, exam: false, teacher: p.teacher, room: p.room, building: 'Сокол', stream: [] };
     });
     return { date: date, state: state, lessons: lessons };
   }

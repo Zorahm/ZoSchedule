@@ -5,7 +5,7 @@
   var Zo = (window.Zo = window.Zo || {});
   var h = Zo.h;
   var MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
-  var HEAD = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
+  var HEAD = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб'];  // воскресенья нет: всегда выходной
 
   function open(ctx) {
     var S = ctx.state, sch = Zo.schedule, key = sch.monthKey(S.sel), drawer = null, body = null;
@@ -19,9 +19,11 @@
     }
 
     function grid() {
-      var first = sch.monthStart(key), last = sch.monthEnd(key), blanks = (Zo.parseDay(first).getDay() + 6) % 7, cells = [];
+      var first = sch.monthStart(key), last = sch.monthEnd(key), day1 = Zo.parseDay(first).getDay(), blanks = day1 === 0 ? 0 : day1 - 1, cells = [];
       for (var b = 0; b < blanks; b++) cells.push(h('span'));
-      for (var iso = first; iso <= last; iso = Zo.addDays(iso, 1)) cells.push(cell(iso));
+      for (var iso = first; iso <= last; iso = Zo.addDays(iso, 1)) {
+        if (Zo.parseDay(iso).getDay() !== 0) cells.push(cell(iso));
+      }
       return h('div', { class: 'cal-grid' }, HEAD.map(function (d) { return h('b', { class: 'mono' }, d); }), cells);
     }
 

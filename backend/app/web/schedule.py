@@ -71,7 +71,7 @@ def _lesson(lesson: Lesson) -> ScheduleLesson:
         exam=lesson.is_exam,
         teacher=(lesson.teacher or "").strip() or None,
         room=(lesson.room or "").strip() or None,
-        building=(lesson.building_short or "").strip() or None,
+        building=(lesson.building or "").strip() or None,
         stream=list(lesson.stream),
     )
 
