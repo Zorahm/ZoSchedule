@@ -50,6 +50,21 @@
     return span.firstChild;
   };
 
+  /* Контурные значки навигации и расписания: свои, на сетке 24, обводка наследует цвет. */
+  var LINES = {
+    calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+    schedule: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 9h8M8 12.5h8M8 16h5"/>',
+    journal: '<rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M9 9.5l2 2 4-4M9 16h6"/>',
+    prev: '<path d="M14.5 6l-6 6 6 6"/>',
+    next: '<path d="M9.5 6l6 6-6 6"/>',
+  };
+  Zo.line = function (name) {
+    var span = document.createElement('span');
+    span.style.display = 'contents';
+    span.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + LINES[name] + '</svg>';
+    return span.firstChild;
+  };
+
   var WEEKDAYS = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
   var WEEKDAYS_SHORT = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
   var MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];

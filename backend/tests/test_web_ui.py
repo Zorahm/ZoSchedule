@@ -40,6 +40,8 @@ async def page(tmp_path: Path) -> AsyncGenerator[Page]:
         context = await browser.new_context(viewport={"width": 390, "height": 780})
         tab = await context.new_page()
         await tab.goto((out / "index.html").as_uri())
+        await tab.wait_for_selector(".wk")
+        await tab.get_by_role("button", name="Журнал").click()
         await tab.wait_for_selector(".cell")
         yield tab
         await browser.close()

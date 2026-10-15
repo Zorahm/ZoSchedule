@@ -1,8 +1,9 @@
-"""Сервер мини-приложения «Журнал посещаемости»: статика и JSON API на aiohttp.
+"""Сервер мини-приложения «Расписание и журнал»: статика и JSON API на aiohttp.
 
 Живёт внутри процесса бота (одна база, один токен). Вход только по подписи Telegram
-(auth.py) и только для старост и доверенных. Каждая ручка — тонкая обёртка над
-``attendance.journal``: правила там, здесь разбор запроса и ответ.
+(auth.py). Расписание открыто любому, чью подпись мы проверили; журнал и всё, что
+его правит, — только старостам и доверенным. Каждая ручка — тонкая обёртка над
+``attendance.journal`` и ``web.schedule``: правила там, здесь разбор запроса и ответ.
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ from pydantic import BaseModel, ValidationError
 
 from app import moscow
 from app.attendance import journal, roster_file, store
+from app.attendance.schedule import monday_of as journal_monday
 from app.attendance.models import (
     JournalDay,
     MarksBody,
@@ -30,6 +32,7 @@ from app.attendance.models import (
 from app.attendance.report import ReportError
 from app.config import AppConfig
 from app.db import connect
+from app.web import schedule
 from app.web.auth import AuthError, TelegramUser, verify_init_data
 
 logger = logging.getLogger(__name__)
@@ -95,16 +98,26 @@ async def _errors(request: web.Request, handler: Handler) -> web.StreamResponse:
         return _error(500, "server", "Сбой на сервере. Попробуйте ещё раз.")
 
 
-def _login(request: web.Request) -> TelegramUser:
-    """Кто просит: по подписи запуска. Не староста и не доверенный — отказ."""
+def _verified(request: web.Request) -> TelegramUser:
+    """Кто просит: по подписи запуска. Роль не проверяется."""
     config = request.app[_CONFIG]
     header = request.headers.get("Authorization", "")
     if not header.startswith("tma "):
-        raise AuthError("unauthorized", "Откройте журнал из чата с ботом.")
-    user = verify_init_data(
+        raise AuthError("unauthorized", "Откройте приложение из чата с ботом.")
+    return verify_init_data(
         header.removeprefix("tma "), config.bot.token.get_secret_value(), now=moscow.now()
     )
-    if user.id not in set(config.bot.headmen) | set(config.bot.trusted_users):
+
+
+def _is_headman(request: web.Request, user: TelegramUser) -> bool:
+    config = request.app[_CONFIG]
+    return user.id in set(config.bot.headmen) | set(config.bot.trusted_users)
+
+
+def _login(request: web.Request) -> TelegramUser:
+    """Вошедший староста. Не староста и не доверенный — отказ."""
+    user = _verified(request)
+    if not _is_headman(request, user):
         logger.warning("Журнал: отказ пользователю %s, его нет в headmen/trusted_users", user.id)
         raise AuthError("forbidden", "Журнал доступен только старосте.", 403)
     return user
@@ -160,6 +173,25 @@ async def _journal(request: web.Request, _: TelegramUser) -> web.Response:
             day=_day_arg(request, "day"),
             week_of=_day_arg(request, "week"),
             now=moscow.now(),
+        )
+    return web.json_response(result.model_dump(mode="json"))
+
+
+async def _schedule(request: web.Request) -> web.StreamResponse:
+    """Расписание видит любой, чью подпись Telegram мы проверили; староста узнаётся по флагу."""
+    config = request.app[_CONFIG]
+    user = _verified(request)
+    now = moscow.now()
+    start = _day_arg(request, "from") or journal_monday(now.date())
+    end = _day_arg(request, "to") or start + dt.timedelta(days=6)
+    with connect(config.db_path) as conn:
+        result = schedule.build(
+            conn,
+            group=config.group.name,
+            start=start,
+            end=end,
+            headman=_is_headman(request, user),
+            now=now,
         )
     return web.json_response(result.model_dump(mode="json"))
 
@@ -236,6 +268,7 @@ def build_app(config: AppConfig, sender: ReportSender) -> web.Application:
     app[_SENDER] = sender
     app.router.add_get("/healthz", _health)
     app.router.add_get("/api/journal", _for_headmen(_journal))
+    app.router.add_get("/api/schedule", _schedule)
     app.router.add_post("/api/marks", _for_headmen(_marks))
     app.router.add_get("/api/roster", _for_headmen(_roster_get))
     app.router.add_put("/api/roster", _for_headmen(_roster_put))

@@ -1,42 +1,41 @@
-/* Журнал посещаемости: один экран, шапка сверху, таблица посередине, панель снизу.
-   Вёрстка повторяет картинку для куратора (web/design/report.html): плоская бумага, тонкие
-   рамки, жирная линия под шапкой таблицы и над итогами, зебра, подписи моноширинным капсом.
-   Без теней и полупрозрачных подложек: журнал должен выглядеть как та же таблица, только живая. */
+/* Журнал посещаемости и расписание: один экран на вкладку. Палитра и шрифты — стиль Yaca:
+   холодный графит, бирюзовый акцент, плоские поверхности с тонкой рамкой, подписи моноширинным
+   капсом. Теней нет: глубину дают рамки и тональные заливки. Исключение — плавающая навигация
+   (nav.css), её «стекло» собрано из размытия и рамки. */
 :root {
-  --bg: #f4efe6; --surface: #fbf8f2; --zebra: #f7f2e9; --ink: #1a1611; --muted: #5c5347;
-  --line: #e6ddce; --frame: #d9cfbf; --line-strong: #8a7f70;
-  --accent: #ff4d2e; --on-accent: #1a1611;
-  --present-bg: #d8ecd5; --present-ink: #21502a; --present-line: #a9d2a5;
-  --absent-bg: #e0442a; --absent-ink: #ffffff;
-  --present-solid: #228b22; --present-solid-ink: #ffffff;
-  --stale: #8c2313; --pick: #fde3da; --rule: #1a1611;
-  --f-display: Unbounded, 'Arial Black', sans-serif;
+  --bg: #f3f4f1; --surface: #ffffff; --zebra: #f7f8f6; --ink: #1b2024; --muted: #5c646b;
+  --line: #d6dbd8; --frame: #c5ccc9; --line-strong: #8a949b;
+  --accent: #0f6b6a; --on-accent: #ffffff; --accent-ink: #0b5352; --accent-soft: #ddeeec;
+  --present-bg: #e3f1e6; --present-ink: #2e6b45; --present-line: #9ccba9;
+  --absent-bg: #a0302a; --absent-ink: #ffffff;
+  --present-solid: #2e6b45; --present-solid-ink: #ffffff;
+  --stale: #a0302a; --pick: #ddeeec; --rule: #1b2024;
+  --warn: #7a5a12; --note-bg: #fbf6e8; --note-line: #e6d9b6; --del-bg: #f7e0dc;
+  --f-display: Onest, system-ui, sans-serif;
   --f-body: Onest, system-ui, sans-serif;
   --f-mono: 'JetBrains Mono', ui-monospace, monospace;
   --cell: 38px; --row: 48px; --col: 52px; --who: 132px; --gut: 16px; --r: 10px;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0e1117; --surface: #161b25; --zebra: #131823; --ink: #eef1f7; --muted: #8d96a8;
-    --line: #222939; --frame: #2b3345; --line-strong: #46506a;
-    --accent: #c6ff3d; --on-accent: #0e1117;
-    --present-bg: #16372a; --present-ink: #86e5a8; --present-line: #2f8a5f;
-    --absent-bg: #ff6a4d; --absent-ink: #1a0b08;
-    --present-solid: #5fd48a; --present-solid-ink: #0e1117;
-    --stale: #ff9d88; --pick: #232c18; --rule: #6b7590;
-    color-scheme: dark;
-  }
+  :root:not([data-theme="light"]) { --bg: #15181b; --surface: #1e2327; --zebra: #1a1f23; --ink: #e7ebe9; --muted: #9aa3a8;
+    --line: #343c42; --frame: #3e474e; --line-strong: #5a646b;
+    --accent: #23807e; --on-accent: #ffffff; --accent-ink: #8ed8d6; --accent-soft: #1d3b3b;
+    --present-bg: #1f3a27; --present-ink: #6cc08c; --present-line: #2f6b45;
+    --absent-bg: #f0867e; --absent-ink: #1a0b08;
+    --present-solid: #6cc08c; --present-solid-ink: #15181b;
+    --stale: #f0867e; --pick: #1d3b3b; --rule: #5a646b;
+    --warn: #e0b65a; --note-bg: #33301f; --note-line: #5a5030; --del-bg: #3d2421;
+    color-scheme: dark; }
 }
-:root[data-theme="dark"] {
-  --bg: #0e1117; --surface: #161b25; --zebra: #131823; --ink: #eef1f7; --muted: #8d96a8;
-  --line: #222939; --frame: #2b3345; --line-strong: #46506a;
-  --accent: #c6ff3d; --on-accent: #0e1117;
-  --present-bg: #16372a; --present-ink: #86e5a8; --present-line: #2f8a5f;
-  --absent-bg: #ff6a4d; --absent-ink: #1a0b08;
-  --present-solid: #5fd48a; --present-solid-ink: #0e1117;
-  --stale: #ff9d88; --pick: #232c18; --rule: #6b7590;
-  color-scheme: dark;
-}
+:root[data-theme="dark"] { --bg: #15181b; --surface: #1e2327; --zebra: #1a1f23; --ink: #e7ebe9; --muted: #9aa3a8;
+    --line: #343c42; --frame: #3e474e; --line-strong: #5a646b;
+    --accent: #23807e; --on-accent: #ffffff; --accent-ink: #8ed8d6; --accent-soft: #1d3b3b;
+    --present-bg: #1f3a27; --present-ink: #6cc08c; --present-line: #2f6b45;
+    --absent-bg: #f0867e; --absent-ink: #1a0b08;
+    --present-solid: #6cc08c; --present-solid-ink: #15181b;
+    --stale: #f0867e; --pick: #1d3b3b; --rule: #5a646b;
+    --warn: #e0b65a; --note-bg: #33301f; --note-line: #5a5030; --del-bg: #3d2421;
+    color-scheme: dark; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; }
@@ -69,7 +68,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
 .icon-btn::after { content: ""; position: absolute; inset: -3px; }
 .icon-btn svg { width: 20px; height: 20px; }
 .icon-btn:active { background: var(--line); }
-h1 { font: 700 clamp(28px, 9vw, 40px)/1 var(--f-display); letter-spacing: -.02em; overflow-wrap: anywhere; }
+h1 { font: 600 clamp(24px, 7.5vw, 30px)/1.1 var(--f-display); letter-spacing: -.01em; overflow-wrap: anywhere; }
 .title .sub { margin-top: 6px; font-size: 15px; color: var(--muted); }
 .title .sub b { font: 400 14px/1 var(--f-mono); color: var(--ink); white-space: nowrap; }
 .status { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; min-height: 20px;

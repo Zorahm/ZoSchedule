@@ -59,7 +59,7 @@ class ReportSender:
         try:
             await self._ctx.bot.set_chat_menu_button(
                 chat_id=user_id,
-                menu_button=MenuButtonWebApp(text="Журнал", web_app=WebAppInfo(url=web_url)),
+                menu_button=MenuButtonWebApp(text="Расписание", web_app=WebAppInfo(url=web_url)),
             )
         except errors.TELEGRAM_ERRORS as error:
             logger.warning("Не удалось поставить кнопку журнала для %s: %s", user_id, error)

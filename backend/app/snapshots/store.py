@@ -292,6 +292,16 @@ def events_after(conn: sqlite3.Connection, after_id: int) -> list[ChangeEvent]:
     return [_event_from_row(row) for row in rows]
 
 
+def events_between(conn: sqlite3.Connection, start: dt.date, end: dt.date) -> list[ChangeEvent]:
+    """События о парах с датами из отрезка, от старых к новым."""
+    rows = conn.execute(
+        "SELECT id, detected_at, payload_json FROM change_events"
+        " WHERE date >= ? AND date <= ? ORDER BY id",
+        (start.isoformat(), end.isoformat()),
+    ).fetchall()
+    return [_event_from_row(row) for row in rows]
+
+
 def _event_from_row(row: sqlite3.Row) -> ChangeEvent:
     decoded: object = json.loads(_text(row, "payload_json"))
     if not isinstance(decoded, dict):
