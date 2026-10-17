@@ -17,6 +17,7 @@ from app.render.pictures import Picture, target_monday
 logger = logging.getLogger(__name__)
 
 _LOOKAHEAD_DAYS = 8
+_SUNDAY = 6
 """How far /go looks for a day that still has lessons."""
 
 
@@ -82,6 +83,9 @@ class Poster:
 
     async def _post_today_to(self, target: Target, *, force: bool) -> bool:
         day = self._day_to_post()
+        if day.weekday() == _SUNDAY and not force:
+            # Воскресенья в расписании нет; в субботу с `day_ahead` завтрашний день — он.
+            return False
         with connect(self._ctx.config.db_path) as conn:
             if bot_store.find(conn, chat_id=target.chat, kind="today", day=day) and not force:
                 return False
@@ -151,6 +155,8 @@ class Poster:
         today = moscow.now().date()
         for offset in range(_LOOKAHEAD_DAYS):
             day = today + dt.timedelta(days=offset)
+            if day.weekday() == _SUNDAY:
+                continue
             picture = await ctx.pictures.today(day)
             if picture is None:
                 continue
