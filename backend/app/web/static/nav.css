@@ -1,25 +1,52 @@
-/* Вкладки и плавающая навигация. «Стекло» iOS 26 собрано из размытия фона и тонкой рамки, без теней:
-   так же плоско, как весь остальной интерфейс. */
+/* Вкладки и плавающая навигация в духе iOS 26: стеклянная пилюля, значок над подписью, «линза»
+   под выбранной вкладкой. Единственное место с тенью: пилюля висит над содержимым, и без тени
+   стекло сливается с карточками под ним. */
 .pane { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .pane[hidden] { display: none; }
-body.has-nav .pane { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+.pane:not([hidden]) { animation: pane-in .2s ease; }
+@keyframes pane-in { from { opacity: 0; transform: translateY(6px); } }
 
-.nav { --lx: 4px; --lw: 120px; position: fixed; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 15;
-  display: flex; gap: 2px; padding: 4px; border-radius: 999px; border: 1px solid var(--frame);
-  background: var(--surface); background: color-mix(in srgb, var(--surface) 76%, transparent);
-  -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35); }
-.lens { position: absolute; top: 4px; bottom: 4px; left: 0; width: var(--lw); transform: translateX(var(--lx)); border-radius: 999px;
-  background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent);
-  transition: transform .32s cubic-bezier(.3, 1.35, .5, 1), width .26s ease; }
-.tab { position: relative; z-index: 1; height: 44px; padding: 0 16px; border-radius: 999px; display: flex; align-items: center; gap: 8px;
-  color: var(--muted); font: 600 13px/1 var(--f-body); white-space: nowrap; transition: padding .26s ease, color .2s; }
-.tab svg { flex: none; width: 22px; height: 22px; }
-.tab span { overflow: hidden; max-width: 120px; transition: max-width .26s ease, opacity .2s; }
+/* Место под пилюлей. Расписание прокручивается под стеклом, поэтому отступ у списка, а не у вкладки;
+   журналу нужна видимая панель снизу, ему отступ у вкладки. Отступ не зависит от сжатия пилюли:
+   иначе сжатие сдвигало бы прокрутку и само себя переключало. */
+:root { --nav-space: calc(84px + env(safe-area-inset-bottom, 0px)); }
+body.has-nav #pane-journal { padding-bottom: var(--nav-space); }
+body.has-nav #pane-journal .bar-b { padding-bottom: 10px; }
+body.has-nav .sch-list { padding-bottom: calc(var(--nav-space) + 12px); }
+
+:root { --glass: color-mix(in srgb, var(--surface) 82%, transparent); --glass-hi: rgba(255, 255, 255, .7); --glass-shadow: 0 10px 30px rgba(20, 30, 35, .14), 0 1px 3px rgba(20, 30, 35, .08); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --glass: color-mix(in srgb, var(--surface) 80%, transparent); --glass-hi: rgba(255, 255, 255, .08); --glass-shadow: 0 10px 30px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .3); }
+}
+:root[data-theme="dark"] { --glass: color-mix(in srgb, var(--surface) 80%, transparent); --glass-hi: rgba(255, 255, 255, .08); --glass-shadow: 0 10px 30px rgba(0, 0, 0, .45), 0 1px 3px rgba(0, 0, 0, .3); }
+
+/* Под шторками и экраном списка группы (z-index 15+): поверх них пилюля перекрывала их кнопки. */
+.nav { --n: 2; --i: 0; position: fixed; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 14;
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 4px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--frame) 70%, transparent);
+  background: var(--surface); background: var(--glass);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8); backdrop-filter: blur(20px) saturate(1.8);
+  box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow); }
+/* Линза считается от ширины самой пилюли, а не замеряется скриптом: когда пилюля сжимается,
+   линза сжимается с ней в том же кадре и не отстаёт от своей вкладки. */
+.lens { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / var(--n)); border-radius: 999px;
+  transform: translateX(calc(var(--i) * 100%)); background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+  transition: transform .38s cubic-bezier(.25, .9, .3, 1); }
+.lens.jelly { animation: jelly .38s ease; }
+@keyframes jelly { 45% { scale: 1.1 .9; } }
+.tab { position: relative; z-index: 1; width: 92px; height: 54px; border-radius: 999px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  color: var(--muted); font: 600 11px/1 var(--f-body); letter-spacing: .01em; white-space: nowrap;
+  transition: width .3s ease, height .3s ease, color .2s; }
+.tab svg { flex: none; width: 24px; height: 24px; }
+.tab span { display: block; max-height: 12px; transition: max-height .3s ease, opacity .2s ease; }
 .tab.on { color: var(--accent-ink); }
-.nav.compact .tab:not(.on) { padding: 0 12px; }
-.nav.compact .tab:not(.on) span { max-width: 0; opacity: 0; }
-.nav.compact .tab:not(.on) { gap: 0; }
+.tab:active svg { scale: .9; }
+
+/* Прокрутка вниз оставляет одни значки: пилюля короче и уже, ничего не прыгает вбок. */
+.nav.compact .tab { width: 64px; height: 42px; }
+.nav.compact .tab span { max-height: 0; opacity: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   .lens, .tab, .tab span { transition: none; }
