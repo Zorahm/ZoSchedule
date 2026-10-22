@@ -2,7 +2,7 @@
    плоские карточки с тонкой рамкой, моноширинные подписи, акцент только на важном. */
 
 .slot-top { flex: none; }
-.sch-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px var(--gut) 28px; display: flex; flex-direction: column; gap: 12px; }
+.sch-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px var(--gut) calc(28px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 12px; }
 .pill { flex: none; height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent-ink); font: 600 13px/1 var(--f-body); }
 
 /* ---------- полоса недели ---------- */
